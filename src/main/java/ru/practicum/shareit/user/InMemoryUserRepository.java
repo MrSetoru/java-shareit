@@ -27,19 +27,12 @@ public class InMemoryUserRepository implements UserRepository {
     }
 
     @Override
-    public Optional<User> updateUser(Long id, User user) {
-        if (!users.containsKey(id)) {
-            return Optional.empty();
+    public User updateUser(User user) {
+        if (!users.containsKey(user.getId())) {
+            throw new RuntimeException("User with ID " + user.getId() + " not found for update.");
         }
-        User existingUser = users.get(id);
-        if (user.getName() != null) {
-            existingUser.setName(user.getName());
-        }
-        if (user.getEmail() != null) {
-            existingUser.setEmail(user.getEmail());
-        }
-        users.put(id, existingUser);
-        return Optional.of(existingUser);
+        users.put(user.getId(), user);
+        return user;
     }
 
     @Override
