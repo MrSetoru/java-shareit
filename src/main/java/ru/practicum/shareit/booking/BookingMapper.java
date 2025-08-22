@@ -4,25 +4,26 @@ import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.user.User;
 
 public class BookingMapper {
+
     public static BookingDto toBookingDto(Booking booking) {
-        BookingDto bookingDto = new BookingDto();
-        bookingDto.setId(booking.getId());
-        bookingDto.setStart(booking.getStart());
-        bookingDto.setEnd(booking.getEnd());
-        bookingDto.setItemId(booking.getItem().getId());
-        bookingDto.setBookerId(booking.getBooker().getId());
-        bookingDto.setStatus(booking.getStatus());
-        return bookingDto;
+        return BookingDto.builder()
+                .id(booking.getId())
+                .start(booking.getStartTime()) // Use getStartTime
+                .end(booking.getEndTime())   // Use getEndTime
+                .itemId(booking.getItem().getId())
+                .bookerId(booking.getBooker().getId())
+                .status(booking.getStatus())
+                .build();
     }
 
     public static Booking fromBookingDto(BookingDto bookingDto, Item item, User booker) {
-        Booking booking = new Booking();
-        booking.setId(bookingDto.getId());
-        booking.setStart(bookingDto.getStart());
-        booking.setEnd(bookingDto.getEnd());
-        booking.setItem(item);
-        booking.setBooker(booker);
-        booking.setStatus(bookingDto.getStatus());
-        return booking;
+        return Booking.builder()
+                .id(bookingDto.getId())
+                .startTime(bookingDto.getStart()) // Use getStart from DTO
+                .endTime(bookingDto.getEnd())   // Use getEnd from DTO
+                .item(item)
+                .booker(booker)
+                .status(bookingDto.getStatus())
+                .build();
     }
 }

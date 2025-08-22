@@ -1,49 +1,67 @@
 package ru.practicum.shareit.request;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.user.InMemoryUserRepository;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exception.UserNotFoundException;
 import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.user.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
+@Transactional(readOnly = true)
 public class ItemRequestServiceImpl implements ItemRequestService {
 
-    private final InMemoryItemRequestRepository itemRequestRepository;
-    private final InMemoryUserRepository userRepository;
+    private final ItemRequestRepository itemRequestRepository;
+    private final UserRepository userRepository;
 
     @Override
+    @Transactional
     public ItemRequest createItemRequest(Long userId, ItemRequestDto itemRequestDto) {
-        User requestor = userRepository.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        ItemRequest itemRequest = ItemRequestMapper.fromItemRequestDto(itemRequestDto, requestor);
-        return itemRequestRepository.createItemRequest(itemRequest);
+        log.info("Creating item request for user {} with data {}", userId, itemRequestDto);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found."));
+
+        ItemRequest itemRequest = new ItemRequest();
+        itemRequest.setDescription(itemRequestDto.getDescription());
+        itemRequest.setRequestor(user);
+        itemRequest.setCreated(LocalDateTime.now());
+
+        return itemRequestRepository.save(itemRequest);
     }
 
     @Override
     public ItemRequest getItemRequestById(Long userId, Long itemRequestId) {
-        userRepository.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return itemRequestRepository.getItemRequestById(itemRequestId)
-                .orElseThrow(() -> new RuntimeException("ItemRequest not found"));
+        log.info("Getting item request {} for user {}", itemRequestId, userId);
+        return itemRequestRepository.findById(itemRequestId).orElse(null);
     }
 
     @Override
     public List<ItemRequest> getItemRequestsByRequestorId(Long userId) {
-        userRepository.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return itemRequestRepository.getItemRequestsByRequestorId(userId);
+        log.info("Getting item requests created by user {}", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found."));
+
+        return itemRequestRepository.findByRequestorId(userId);
     }
 
     @Override
     public List<ItemRequest> getAllItemRequests(Long userId) {
-        userRepository.getUserById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        return itemRequestRepository.getAllItemRequests().stream()
-                .filter(itemRequest -> !itemRequest.getRequestor().getId().equals(userId))
-                .collect(Collectors.toList());
+        log.info("Getting all item requests (except those created by user {})", userId);
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found."));
+
+        List<ItemRequest> allRequests = itemRequestRepository.findAll();
+        return allRequests.stream()
+                .filter(request -> !request.getRequestor().getId().equals(userId))
+                .toList();
     }
 }

@@ -1,44 +1,54 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/users")
 @RequiredArgsConstructor
+@Slf4j
+@Validated
 public class UserController {
 
     private final UserService userService;
+    private final UserMapper userMapper;
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    public UserDto createUser(@Valid @RequestBody UserDto userDto) {
+        log.info("Received request to create user {}", userDto);
+        User user = userService.createUser(userDto);
+        return userMapper.toUserDto(user);
+    }
+
+    @GetMapping("/{userId}")
+    public UserDto getUserById(@PathVariable Long userId) {
+        log.info("Received request to get user with id {}", userId);
+        return userService.getUserById(userId);
+    }
 
     @GetMapping
     public List<UserDto> getAllUsers() {
-        return userService.getAllUsers().stream()
-                .map(UserMapper::toUserDto)
-                .collect(Collectors.toList());
+        log.info("Received request to get all users");
+        return userService.getAllUsers();
     }
 
-    @GetMapping("/{id}")
-    public UserDto getUserById(@PathVariable Long id) {
-        return UserMapper.toUserDto(userService.getUserById(id).orElseThrow(() -> new RuntimeException("User not found")));
+    @PatchMapping("/{userId}")
+    public UserDto updateUser(@PathVariable Long userId, @RequestBody UserDto userDto) {
+        log.info("Received request to update user with id {} with data {}", userId, userDto);
+        return userService.updateUser(userId, userDto);
     }
 
-    @PostMapping
-    public UserDto createUser(@RequestBody UserDto userDto) {
-        User user = UserMapper.fromUserDto(userDto);
-        return UserMapper.toUserDto(userService.createUser(user));
-    }
-
-    @PatchMapping("/{id}")
-    public UserDto updateUser(@PathVariable Long id, @RequestBody UserDto userDto) {
-        User user = UserMapper.fromUserDto(userDto);
-        return UserMapper.toUserDto(userService.updateUser(id, user).orElseThrow(() -> new RuntimeException("User not found")));
-    }
-
-    @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    @DeleteMapping("/{userId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void deleteUser(@PathVariable Long userId) {
+        log.info("Received request to delete user with id {}", userId);
+        userService.deleteUser(userId);
     }
 }

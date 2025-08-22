@@ -1,0 +1,16 @@
+package ru.practicum.shareit.validation;
+
+import javax.validation.Constraint;
+import javax.validation.Payload;
+import java.lang.annotation.*;
+
+@Documented
+@Constraint(validatedBy = ValueOfEnumValidator.class) // Укажите ваш класс валидатора
+@Target({ElementType.METHOD, ElementType.FIELD, ElementType.PARAMETER})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface ValueOfEnum {
+    Class<? extends Enum<?>> enumClass();
+    String message() default "must be any of enum {enumClass}";
+    Class<?>[] groups() default {};
+    Class<? extends Payload>[] payload() default {};
+}

@@ -1,112 +1,78 @@
 package ru.practicum.shareit.user;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.exception.ConflictException;
+import org.springframework.transaction.annotation.Transactional;
+import ru.practicum.shareit.exception.UserNotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.exception.ConflictException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
+@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
 
-    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
     private final UserRepository userRepository;
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-            "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$");
+    private final UserMapper userMapper;
 
     @Override
-    public List<User> getAllUsers() {
+    @Transactional
+    public User createUser(UserDto userDto) {
+        log.info("Creating user: {}", userDto);
+        User user = userMapper.fromUserDto(userDto);
+        return userRepository.save(user);
+    }
+
+    @Override
+    public UserDto getUserById(Long userId) {
+        log.info("Getting user with id: {}", userId);
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
+        return userMapper.toUserDto(user);
+    }
+
+    @Override
+    public List<UserDto> getAllUsers() {
         log.info("Getting all users");
-        return userRepository.getAllUsers();
+        return userRepository.findAll().stream()
+                .map(userMapper::toUserDto)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Optional<User> getUserById(Long id) {
-        log.info("Getting user by id: {}", id);
-        return userRepository.getUserById(id);
-    }
+    @Transactional
+    public UserDto updateUser(Long userId, UserDto userDto) {
+        log.info("Updating user with id: {}, with data: {}", userId, userDto);
+        User userToUpdate = userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
 
-    @Override
-    public User createUser(User user) {
-        log.info("Creating user: {}", user);
-        validateUser(user);
-
-        if (userRepository.getAllUsers().stream()
-                .anyMatch(u -> u.getEmail().equalsIgnoreCase(user.getEmail()))) {
-            log.warn("Attempt to create user with existing email: {}", user.getEmail());
-            throw new ConflictException("User with email " + user.getEmail() + " already exists.");
+        if (userDto.getName() != null && !userDto.getName().isBlank()) {
+            userToUpdate.setName(userDto.getName());
         }
 
-        return userRepository.createUser(user);
-    }
-
-    @Override
-    public Optional<User> updateUser(Long id, User user) {
-        log.info("Updating user with id {}. Data to update: {}", id, user);
-
-        User existingUser = userRepository.getUserById(id)
-                .orElseThrow(() -> {
-                    log.error("Attempt to update non-existent user with id: {}", id);
-                    return new RuntimeException("User not found for update with id: " + id);
-                });
-
-        if (user.getEmail() != null) {
-            if (user.getEmail().isEmpty()) {
-                log.warn("Attempt to update user {} with empty email", id);
-                throw new ValidationException("Email cannot be empty");
+        if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
+            Optional<User> existingUserWithEmail = userRepository.findByEmail(userDto.getEmail()); // Get Optional<User>
+            // Обрати внимание: здесь нужно сравнить ID иначе, если ты просто получаешь ID
+            // Лучше использовать equals() для сравнения объектов Long
+            if (existingUserWithEmail.isPresent() &&
+                    !existingUserWithEmail.get().getId().equals(userId)) { // Используем .equals() для сравнения Long
+                throw new ConflictException("Email already exists"); // ===> Заменили ValidationException на ConflictException
             }
-            if (!EMAIL_PATTERN.matcher(user.getEmail()).matches()) {
-                log.warn("Attempt to update user {} with invalid email format: {}", id, user.getEmail());
-                throw new ValidationException("Invalid email format");
-            }
-
-            if (!user.getEmail().equalsIgnoreCase(existingUser.getEmail())) {
-                if (userRepository.getAllUsers().stream()
-                        .anyMatch(u -> u.getEmail().equalsIgnoreCase(user.getEmail()) && !u.getId().equals(id))) {
-                    log.warn("Attempt to update user {} with email {} which already belongs to another user.", id, user.getEmail());
-                    throw new ConflictException("Email " + user.getEmail() + " already belongs to another user.");
-                }
-            }
-            existingUser.setEmail(user.getEmail());
+            userToUpdate.setEmail(userDto.getEmail());
         }
-
-        if (user.getName() != null && !user.getName().isEmpty()) {
-            existingUser.setName(user.getName());
-        } else if (user.getName() != null && user.getName().isEmpty()) {
-            log.warn("Attempt to update user {} with empty name", id);
-            throw new ValidationException("Name cannot be empty");
-        }
-
-        return Optional.of(userRepository.updateUser(existingUser));
+        return userMapper.toUserDto(userRepository.save(userToUpdate));
     }
 
     @Override
-    public boolean deleteUser(Long id) {
-        log.info("Deleting user with id: {}", id);
-        return userRepository.deleteUser(id);
-    }
-
-    private void validateUser(User user) {
-        log.debug("Validating user: {}", user);
-        if (user.getEmail() == null || user.getEmail().isEmpty()) {
-            log.warn("Validation failed for user: Email is null or empty. User data: {}", user);
-            throw new ValidationException("Email cannot be empty");
-        }
-        if (!EMAIL_PATTERN.matcher(user.getEmail()).matches()) {
-            log.warn("Validation failed for user: Invalid email format. Email: {}", user.getEmail());
-            throw new ValidationException("Invalid email format");
-        }
-
-        if (user.getName() == null || user.getName().isEmpty()) {
-            log.warn("Validation failed for user: Name is null or empty. User data: {}", user);
-            throw new ValidationException("Name cannot be empty");
-        }
-        log.debug("User validation successful for user with email: {}", user.getEmail());
+    @Transactional
+    public void deleteUser(Long userId) {
+        log.info("Deleting user with id: {}", userId);
+        userRepository.deleteById(userId);
     }
 }
