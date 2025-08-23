@@ -1,49 +1,42 @@
 package ru.practicum.shareit.item;
 
-import ru.practicum.shareit.booking.Booking;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
 import ru.practicum.shareit.booking.BookingDto;
-import ru.practicum.shareit.user.User;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.item.ItemDto;
+import ru.practicum.shareit.item.ItemWithBookingsDto;
+import ru.practicum.shareit.item.Item;
+import ru.practicum.shareit.user.User; // Импорт User
 
-public class ItemMapper {
+// Если ItemMapper управляется Spring, убедись, что componentModel = "spring"
+@Mapper(componentModel = "spring", uses = {})
+public interface ItemMapper {
 
-    public static ItemDto toItemDto(Item item) {
-        return ItemDto.builder()
-                .id(item.getId())
-                .name(item.getName())
-                .description(item.getDescription())
-                .available(item.getAvailable())
-                .ownerId(item.getOwner().getId())
-                .build();
-    }
+    @Mapping(target = "ownerId", source = "owner.id") // owner.id из Item -> ownerId в ItemDto
+    ItemDto toItemDto(Item item);
 
-    public static Item fromItemDto(ItemDto itemDto, User owner) {
-        return Item.builder()
-                .id(itemDto.getId())
-                .name(itemDto.getName())
-                .description(itemDto.getDescription())
-                .available(itemDto.getAvailable())
-                .owner(owner)
-                .build();
-    }
+    //@Mapping(target = "owner", ignore = true) // owner будет установлен отдельно
+    Item toItem(ItemDto itemDto);
 
-    public static BookingDto toBookingDto(Booking booking) { // Added toBookingDto method
-        return BookingDto.builder()
-                .id(booking.getId())
-                .bookerId(booking.getBooker().getId())
-                .itemId(booking.getItem().getId())
-                .start(booking.getStartTime())
-                .end(booking.getEndTime())
-                .status(booking.getStatus())
-                .build();
-    }
+    @Mapping(target = "ownerId", source = "owner.id")
+    ItemWithBookingsDto toItemWithBookingsDto(Item item);
 
-    public static Item toItem(ItemDto itemDto) { // Added toItem method
-        return Item.builder()
-                .id(itemDto.getId())
-                .name(itemDto.getName())
-                .description(itemDto.getDescription())
-                .available(itemDto.getAvailable())
-                .requestId(itemDto.getRequestId())
-                .build();
-    }
+    // Методы для маппинга Booking
+    @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "bookerId", source = "booker.id")
+    BookingDto toBookingDto(Booking booking);
+
+    // Если нужен маппинг Item в ItemDto с учетом Bookings (хотя обычноItemWithBookingsDto отдельный)
+    // @Mapping(target = "ownerId", source = "owner.id")
+    // ItemDto toItemDtoWithBookings(Item item); // Название может быть другим
+
+    // Если нужен маппинг BookingCreateDto в Booking (аналогично BookingMapper)
+    // @Mapping(target = "id", ignore = true)
+    // @Mapping(target = "item", ignore = true)
+    // @Mapping(target = "booker", ignore = true)
+    // @Mapping(target = "start", source = "start")
+    // @Mapping(target = "end", source = "end")
+    // @Mapping(target = "status", ignore = true) // Устанавливается в сервисе
+    // Booking toBooking(BookingCreateDto bookingCreateDto);
 }

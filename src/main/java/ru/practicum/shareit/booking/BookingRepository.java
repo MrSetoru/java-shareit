@@ -1,79 +1,72 @@
 package ru.practicum.shareit.booking;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
+@Repository
 public interface BookingRepository extends JpaRepository<Booking, Long> {
 
-    @Query// 1. Поиск всех бронирований для пользователя (booker)
-    List<Booking> findByBookerId(Long bookerId, Pageable pageable);
+    // --- Получение конкретного бронирования ---
+    // Найти бронирование по ID и убедиться, что запрашивает либо автор, либо владелец вещи
+    @Query("SELECT b FROM Booking b JOIN FETCH b.item WHERE b.id = :bookingId AND (b.booker.id = :userId OR b.item.owner.id = :userId)")
+    Optional<Booking> findByIdAndUserId(@Param("bookingId") Long bookingId, @Param("userId") Long userId);
 
-    @Query// 2. Поиск бронирований для пользователя (booker) с определенным статусом
-    List<Booking> findByBookerIdAndStatus(Long bookerId, BookingStatus status, Pageable pageable);
+    // --- Получение бронирований по автору (booker) ---
+    // Метод для получения всех бронирований автора (сортировка по убыванию времени начала)
+    List<Booking> findByBookerIdOrderByStartDesc(Long bookerId);
 
-    // 3. Поиск бронирований для пользователя (booker), которые уже завершились (дата окончания в прошлом)
-    @Query("SELECT b FROM Booking b WHERE b.booker.id = :bookerId AND b.endTime < :now ORDER BY b.startTime DESC")
-    List<Booking> findPastBookingsByBookerId(@Param("bookerId") Long bookerId, @Param("now") LocalDateTime now, Pageable pageable);
+    // Метод для получения бронирований автора по статусу
+    List<Booking> findByBookerIdAndStatusOrderByStartDesc(Long bookerId, BookingStatus status);
 
-    // 4. Поиск бронирований для пользователя (booker), которые еще не начались (дата начала в будущем)
-    @Query("SELECT b FROM Booking b WHERE b.booker.id = :bookerId AND b.startTime > :now ORDER BY b.startTime DESC")
-    List<Booking> findFutureBookingsByBookerId(@Param("bookerId") Long bookerId, @Param("now") LocalDateTime now, Pageable pageable);
+    // Методы для фильтрации по времени для автора
+    @Query("SELECT b FROM Booking b WHERE b.booker.id = :userId AND b.status = 'APPROVED' AND b.start < :now AND b.end > :now ORDER BY b.start DESC")
+    List<Booking> findBookerCurrentBookings(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    // 5. Поиск текущих бронирований для пользователя (booker) (дата начала в прошлом, дата окончания в будущем)
-    @Query("SELECT b FROM Booking b WHERE b.booker.id = :bookerId AND b.startTime <= :now AND b.endTime >= :now ORDER BY b.startTime DESC")
-    List<Booking> findCurrentBookingsByBookerId(@Param("bookerId") Long bookerId, @Param("now") LocalDateTime now, Pageable pageable);
+    @Query("SELECT b FROM Booking b WHERE b.booker.id = :userId AND b.status = 'APPROVED' AND b.end < :now ORDER BY b.start DESC")
+    List<Booking> findBookerPastBookings(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    // 6. Поиск всех бронирований для владельца вещи (owner)
-    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId ORDER BY b.startTime DESC")
-    List<Booking> findByItemOwnerId(@Param("ownerId") Long ownerId, Pageable pageable);
+    @Query("SELECT b FROM Booking b WHERE b.booker.id = :userId AND b.status = 'APPROVED' AND b.start > :now ORDER BY b.start DESC")
+    List<Booking> findBookerFutureBookings(@Param("userId") Long userId, @Param("now") LocalDateTime now);
 
-    // 7. Поиск бронирований для владельца вещи (owner) с определенным статусом
-    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.status = :status ORDER BY b.startTime DESC")
-    List<Booking> findByItemOwnerIdAndStatus(@Param("ownerId") Long ownerId, @Param("status") BookingStatus status, Pageable pageable);
+    // --- Получение бронирований для владельца вещей (item.owner) ---
+    // Метод для получения всех бронирований для вещей владельца (сортировка по убыванию времени начала)
+    List<Booking> findByItemOwnerIdOrderByStartDesc(Long ownerId);
 
-    // 8. Поиск бронирований для владельца вещи (owner), которые уже завершились (дата окончания в прошлом)
-    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.endTime < :now ORDER BY b.startTime DESC")
-    List<Booking> findPastBookingsByItemOwnerId(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now, Pageable pageable);
+    // Метод для получения бронирований для вещей владельца по статусу
+    List<Booking> findByItemOwnerIdAndStatusOrderByStartDesc(Long ownerId, BookingStatus status);
 
-    // 9. Поиск бронирований для владельца вещи (owner), которые еще не начались (дата начала в будущем)
-    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.startTime > :now ORDER BY b.startTime DESC")
-    List<Booking> findFutureBookingsByItemOwnerId(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now, Pageable pageable);
+    // Методы для фильтрации по времени для владельца
+    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.status = 'APPROVED' AND b.start < :now AND b.end > :now ORDER BY b.start DESC")
+    List<Booking> findOwnerCurrentBookings(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
 
-    // 10. Поиск текущих бронирований для владельца вещи (owner) (дата начала в прошлом, дата окончания в будущем)
-    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.startTime <= :now AND b.endTime >= :now ORDER BY b.startTime DESC")
-    List<Booking> findCurrentBookingsByItemOwnerId(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now, Pageable pageable);
+    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.status = 'APPROVED' AND b.end < :now ORDER BY b.start DESC")
+    List<Booking> findOwnerPastBookings(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
 
-    @Query// 11.  Проверка, что пользователь брал вещь в аренду (для добавления комментария)
-    boolean existsBookingByItemIdAndBookerIdAndStatus(Long itemId, Long bookerId, BookingStatus status);
+    @Query("SELECT b FROM Booking b WHERE b.item.owner.id = :ownerId AND b.status = 'APPROVED' AND b.start > :now ORDER BY b.start DESC")
+    List<Booking> findOwnerFutureBookings(@Param("ownerId") Long ownerId, @Param("now") LocalDateTime now);
 
-    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.startTime < :now ORDER BY b.startTime DESC")
-    Booking findFirstByItem_IdAndStartTimeBeforeOrderByStartTimeDesc(
-            @Param("itemId") Long itemId,
-            @Param("now") LocalDateTime now
-    );
+    // --- Вспомогательные методы для проверки доступности вещи ---
+    // Найти бронирования для конкретной вещи, которые пересекаются с указанным временным интервалом.
+    // Используется для проверки, свободна ли вещь.
+    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND (b.start < :end AND b.end > :start)")
+    List<Booking> findOverlappingBookingsForIte(@Param("itemId") Long itemId, @Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
 
-    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.startTime > :now ORDER BY b.startTime ASC")
-    Booking findFirstByItem_IdAndStartTimeAfterOrderByStartTimeAsc(
-            @Param("itemId") Long itemId,
-            @Param("now") LocalDateTime now
-    );
+    // --- Методы для получения последнего/следующего бронирования (для ItemWithBookingsDto) ---
+    // Находит первое бронирование для вещи, которое закончилось ДО текущего момента (последнее).
+    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.start < :now ORDER BY b.start DESC")
+    List<Booking> findFirstByItemIdAndStartTimeBeforeOrderByStartTimeDesc(@Param("itemId") Long itemId, @Param("now") LocalDateTime now);
 
-    @Query("SELECT b FROM Booking b " +
-            "WHERE b.item.id = :itemId AND b.startTime < :startTime " +
-            "ORDER BY b.startTime DESC")
-    Booking findFirstByItemIdAndStartTimeBeforeOrderByStartTimeDesc(
-            @Param("itemId") Long itemId,
-            @Param("startTime") LocalDateTime startTime
-    );
-
-    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.startTime > :now ORDER BY b.startTime ASC")
-    Booking findFirstByItemIdAndStartTimeAfterOrderByStartTimeAsc(
-            @Param("itemId") Long itemId,
-            @Param("now") LocalDateTime now
-    );
+    // Находит первое бронирование для вещи, которое начнется ПОСЛЕ текущего момента (следующее).
+    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.start > :now ORDER BY b.start ASC")
+    List<Booking> findFirstByItemIdAndStartTimeAfterOrderByStartTimeAsc(@Param("itemId") Long itemId, @Param("now") LocalDateTime now);
 }

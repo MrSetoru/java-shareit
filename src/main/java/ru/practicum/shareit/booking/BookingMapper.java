@@ -1,29 +1,25 @@
 package ru.practicum.shareit.booking;
 
-import ru.practicum.shareit.item.Item;
-import ru.practicum.shareit.user.User;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+import ru.practicum.shareit.item.ItemMapper;
+import ru.practicum.shareit.user.UserMapper;
 
-public class BookingMapper {
+@Mapper(componentModel = "spring", uses = {ItemMapper.class, UserMapper.class})
+public interface BookingMapper {
 
-    public static BookingDto toBookingDto(Booking booking) {
-        return BookingDto.builder()
-                .id(booking.getId())
-                .start(booking.getStartTime()) // Use getStartTime
-                .end(booking.getEndTime())   // Use getEndTime
-                .itemId(booking.getItem().getId())
-                .bookerId(booking.getBooker().getId())
-                .status(booking.getStatus())
-                .build();
-    }
+    @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "bookerId", source = "booker.id")
+    BookingDto toBookingDto(Booking booking);
 
-    public static Booking fromBookingDto(BookingDto bookingDto, Item item, User booker) {
-        return Booking.builder()
-                .id(bookingDto.getId())
-                .startTime(bookingDto.getStart()) // Use getStart from DTO
-                .endTime(bookingDto.getEnd())   // Use getEnd from DTO
-                .item(item)
-                .booker(booker)
-                .status(bookingDto.getStatus())
-                .build();
-    }
+    @Mapping(target = "itemId", source = "item.id")
+    @Mapping(target = "bookerId", source = "booker.id")
+
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "item", ignore = true)
+    @Mapping(target = "booker", ignore = true)
+    @Mapping(target = "start", source = "start")
+    @Mapping(target = "end", source = "end")
+    @Mapping(target = "status", ignore = true)
+    Booking toBooking(BookingCreateDto bookingCreateDto);
 }
