@@ -1,26 +1,41 @@
 package ru.practicum.shareit.user;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import ru.practicum.shareit.booking.Booking; // Импорт Booking
+import ru.practicum.shareit.item.Item;     // Импорт Item
+
+import java.util.List; // Импорт List
 
 @Entity
 @Table(name = "users")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @NotBlank(message = "Имя не может быть пустым")
-    @Column(name = "name", nullable = false, length = 255)
+
+    @Column(nullable = false)
     private String name;
-    @NotBlank(message = "Email не может быть пустым")
-    @Email(message = "Некорректный email формат")
-    @Column(name = "email", nullable = false, unique = true, length = 255)
+
+    @Column(nullable = false, unique = true) // Email должен быть уникальным
     private String email;
+
+    // Связь с вещами, которыми владеет пользователь. OneToMany, так как у пользователя много вещей.
+    // mappedBy указывает на поле 'owner' в классе Item.
+    // Ленивая загрузка.
+    @OneToMany(mappedBy = "owner", fetch = FetchType.LAZY)
+    private List<Item> items;
+
+    // Связь с бронированиями, которые создал пользователь. OneToMany, так как пользователь может создать много бронирований.
+    // mappedBy указывает на поле 'booker' в классе Booking.
+    // Ленивая загрузка.
+    @OneToMany(mappedBy = "booker", fetch = FetchType.LAZY)
+    private List<Booking> bookings;
+
+    // ... (getter/setter, если не используешь Lombok @Data) ...
 }

@@ -4,8 +4,7 @@ import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingDto;
 import ru.practicum.shareit.user.User;
 
-
-public interface ItemMapper {
+public class ItemMapper {
 
     public static ItemDto toItemDto(Item item) {
         return ItemDto.builder()

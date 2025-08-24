@@ -1,40 +1,43 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Data;
+import lombok.Builder;
 import lombok.NoArgsConstructor;
-import ru.practicum.shareit.request.ItemRequest;
+import lombok.AllArgsConstructor;
+import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.user.User;
+
+import java.util.List;
 
 @Entity
 @Table(name = "items")
 @Data
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Item {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(name = "name", nullable = false, length = 255)
+
+    @Column(nullable = false)
     private String name;
-    @Column(name = "description")
+
+    @Column(nullable = false)
     private String description;
-    @Column(name = "available", nullable = false)
+
+    @Column(name = "is_available", nullable = false)
     private Boolean available;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private User owner;
 
-    //@Column(name = "owner_id", nullable = false)  // Removed this line
-    //private Long ownerId;
-
-    @Column(name = "request_id") // Добавляем поле requestId
+    @Column(name = "request_id")
     private Long requestId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "request_id", insertable = false, updatable = false) //  Чтобы избежать дублирования
-    private ItemRequest itemRequest;
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
+    private List<Booking> bookings;
 }
