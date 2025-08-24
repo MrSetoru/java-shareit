@@ -1,7 +1,7 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.*;
-import lombok.Data; // <-- Убедись, что импорт правильный
+import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -12,7 +12,7 @@ import java.util.List;
 
 @Entity
 @Table(name = "items")
-@Data // <-- Убедись, что @Data здесь
+@Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
