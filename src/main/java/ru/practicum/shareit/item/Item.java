@@ -1,10 +1,10 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.user.User;
 
@@ -28,7 +28,7 @@ public class Item {
     @Column(nullable = false)
     private String description;
 
-    @Column(name = "is_available", nullable = false)
+    @Column(name = "available", nullable = false)
     private Boolean available;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -40,4 +40,7 @@ public class Item {
 
     @OneToMany(mappedBy = "item", fetch = FetchType.LAZY)
     private List<Booking> bookings;
+
+    @OneToMany(mappedBy = "item", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    private List<Comment> comments;
 }

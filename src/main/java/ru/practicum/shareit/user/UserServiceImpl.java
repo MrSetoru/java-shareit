@@ -5,7 +5,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.exception.UserNotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.exception.ConflictException;
 
 import java.util.List;
@@ -56,13 +55,10 @@ public class UserServiceImpl implements UserService {
             userToUpdate.setName(userDto.getName());
         }
 
-        if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
-            Optional<User> existingUserWithEmail = userRepository.findByEmail(userDto.getEmail()); // Get Optional<User>
-            // Обрати внимание: здесь нужно сравнить ID иначе, если ты просто получаешь ID
-            // Лучше использовать equals() для сравнения объектов Long
-            if (existingUserWithEmail.isPresent() &&
-                    !existingUserWithEmail.get().getId().equals(userId)) { // Используем .equals() для сравнения Long
-                throw new ConflictException("Email already exists"); // ===> Заменили ValidationException на ConflictException
+        if (userDto.getEmail() != null && !userDto.getEmail().isBlank() && !userDto.getEmail().equals(userToUpdate.getEmail())) {
+            Optional<User> existingUserWithEmail = userRepository.findByEmail(userDto.getEmail());
+            if (existingUserWithEmail.isPresent() && !existingUserWithEmail.get().getId().equals(userId)) {
+                throw new ConflictException("Email already exists");
             }
             userToUpdate.setEmail(userDto.getEmail());
         }
@@ -73,6 +69,9 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public void deleteUser(Long userId) {
         log.info("Deleting user with id: {}", userId);
+        if (!userRepository.existsById(userId)) {
+            throw new UserNotFoundException("User with id " + userId + " not found");
+        }
         userRepository.deleteById(userId);
     }
 }

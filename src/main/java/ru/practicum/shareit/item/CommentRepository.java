@@ -1,9 +1,11 @@
-// CommentRepository.java
 package ru.practicum.shareit.item;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+
 import java.util.List;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
-    List<Comment> findByItemId(Long itemId); // пример запроса для поиска комментариев по id предмета
+
+    List<Comment> findByItem_Id(Long itemId);
+    List<Comment> findByItem_IdIn(List<Long> itemIds);
 }

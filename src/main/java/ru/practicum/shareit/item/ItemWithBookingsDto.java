@@ -2,23 +2,20 @@ package ru.practicum.shareit.item;
 
 import lombok.Builder;
 import lombok.Data;
-import ru.practicum.shareit.booking.BookingDto; // Импорт BookingDto
+import ru.practicum.shareit.booking.BookingDto;
 
-/**
- * DTO для передачи информации о вещи вместе с ее последним и следующим бронированием.
- */
+import java.util.List;
+
 @Data
 @Builder
 public class ItemWithBookingsDto {
-    private Long id;
-    private String name;
-    private String description;
-    private Boolean available;
-    private Long ownerId;
+private Long id;
+private String name;
+private String description;
+private Boolean available;
+private Long requestId;
+private BookingDto lastBooking;
+private BookingDto nextBooking;
+private List<CommentDto> comments;
 
-    // Последнее бронирование для этой вещи
-    private BookingDto lastBooking;
-
-    // Следующее бронирование для этой вещи
-    private BookingDto nextBooking;
 }

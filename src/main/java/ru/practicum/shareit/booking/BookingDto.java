@@ -1,25 +1,21 @@
 package ru.practicum.shareit.booking;
 
-import lombok.Builder;
 import lombok.Data;
-import ru.practicum.shareit.booking.BookingStatus; // Импорт BookingStatus
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
-/**
- * DTO для представления основных данных бронирования.
- */
 @Data
-@Builder
 public class BookingDto {
     private Long id;
-    private LocalDateTime start;
-    private LocalDateTime end;
-    private BookingStatus status;
 
-    // ID вещи, которую бронируют
+    @NotNull(message = "Item ID cannot be null")
     private Long itemId;
 
-    // ID пользователя, который бронирует
+    @NotNull(message = "Booker ID cannot be null")
     private Long bookerId;
+
+    private LocalDateTime start;
+    private LocalDateTime end;
+    private String status;
 }
