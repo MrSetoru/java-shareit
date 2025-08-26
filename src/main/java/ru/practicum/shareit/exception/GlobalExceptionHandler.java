@@ -42,16 +42,6 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse(e.getMessage()), HttpStatus.FORBIDDEN);
     }
 
-//    @ExceptionHandler
-//    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
-//        String errorMessage = e.getBindingResult().getFieldErrors().stream()
-//                .map(error -> error.getDefaultMessage())
-//                .findFirst()
-//                .orElse("Validation error");
-//        log.warn("Validation error: {}", errorMessage);
-//        return new ResponseEntity<>(new ErrorResponse(errorMessage), HttpStatus.BAD_REQUEST);
-//    }
-
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleException(final Exception e) {
         log.error("Internal server error: {}", e.getMessage(), e);

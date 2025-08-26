@@ -8,7 +8,7 @@ public interface ItemService {
 
     ItemDto updateItem(Long userId, Long itemId, ItemDto itemDto);
 
-    ItemWithBookingsDto getItemById(Long itemId, Long userId);
+    ItemWithCommentsDto getItemById(Long itemId, Long userId);
 
     List<ItemDto> getAllItemsByUserId(Long userId);
 

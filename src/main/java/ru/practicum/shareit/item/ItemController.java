@@ -29,7 +29,7 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemWithBookingsDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
+    public ResponseEntity<ItemWithCommentsDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                            @PathVariable Long itemId) {
         return ResponseEntity.ok(itemService.getItemById(itemId, userId));
     }
@@ -46,10 +46,13 @@ public class ItemController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{itemId}/comment")
-    public ResponseEntity<CommentDto> addComment(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                 @PathVariable Long itemId,
-                                                 @Valid @RequestBody CommentDto commentDto) {
-        return new ResponseEntity<>(itemService.addComment(itemId, userId, commentDto), HttpStatus.CREATED);
+    @PostMapping(value = "/{itemId}/comment", consumes = "text/plain", produces = "application/json")
+    public ResponseEntity<CommentDto> addComment(
+            @RequestHeader("X-Sharer-User-Id") Long userId,
+            @PathVariable Long itemId,
+            @RequestBody String text) {
+
+        CommentDto commentDto = CommentDto.builder().text(text).build();
+        return new ResponseEntity<>(itemService.addComment(itemId, userId, commentDto), HttpStatus.OK);
     }
 }

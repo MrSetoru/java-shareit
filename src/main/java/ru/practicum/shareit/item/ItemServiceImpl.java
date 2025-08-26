@@ -67,8 +67,8 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    public ItemWithBookingsDto getItemById(Long itemId, Long userId) {
-        log.info("Getting item with id {} and bookings for user with id {}", itemId, userId);
+    public ItemWithCommentsDto getItemById(Long itemId, Long userId) {
+        log.info("Getting item with id {} and comments", itemId);
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Item with id " + itemId + " not found"));
         User user = userRepository.findById(userId)
@@ -86,17 +86,15 @@ public class ItemServiceImpl implements ItemService {
                 .map(this::toCommentDto)
                 .collect(Collectors.toList());
 
-        ItemWithBookingsDto itemWithBookingsDto = ItemWithBookingsDto.builder()
+        ItemWithCommentsDto itemWithCommentsDto = ItemWithCommentsDto.builder()
                 .id(item.getId())
                 .name(item.getName())
                 .description(item.getDescription())
                 .available(item.getAvailable())
-                .lastBooking(lastBooking != null ? bookingMapper.toBookingDto(lastBooking) : null)
-                .nextBooking(nextBooking != null ? bookingMapper.toBookingDto(nextBooking) : null)
                 .comments(comments)
                 .build();
 
-        return itemWithBookingsDto;
+        return itemWithCommentsDto;
     }
 
     @Override
@@ -130,11 +128,18 @@ public class ItemServiceImpl implements ItemService {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
 
-        // Проверка, что пользователь брал вещь в аренду
         List<Booking> bookings = bookingRepository.findByBookerAndItemAndEndBefore(author, item, LocalDateTime.now());
         if (bookings.isEmpty()) {
             throw new ValidationException("User " + userId + " did not rent item " + itemId);
         }
+        if (commentDto.getText() == null || commentDto.getText().isBlank()) {
+            throw new ValidationException("Text cannot be blank");
+        }
+
+        if (commentDto.getText().length() > 2048) {
+            throw new ValidationException("Text is too long (maximum is 2048 characters)");
+        }
+
 
         Comment comment = Comment.builder()
                 .text(commentDto.getText())

@@ -20,7 +20,7 @@ public class ValueOfEnumValidator implements ConstraintValidator<ValueOfEnum, St
     @Override
     public boolean isValid(String value, ConstraintValidatorContext context) {
         if (value == null) {
-            return true; // Или false, если null не допустим
+            return true;
         }
         return acceptedValues.contains(value);
     }
