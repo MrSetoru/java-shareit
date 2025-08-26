@@ -30,7 +30,7 @@ public class Booking {
     @JoinColumn(name = "booker_id", nullable = false)
     private User booker;
 
-    @Column(name = "start_time", nullable = false)
+    @Column(name = "start_date")
     private LocalDateTime start;
 
     @Column(name = "end_time", nullable = false)

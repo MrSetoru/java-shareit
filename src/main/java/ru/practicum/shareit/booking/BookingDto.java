@@ -15,7 +15,7 @@ public class BookingDto {
     @NotNull(message = "Booker ID cannot be null")
     private Long bookerId;
 
-    private LocalDateTime start;
-    private LocalDateTime end;
+    private String start;
+    private String end;
     private String status;
 }
