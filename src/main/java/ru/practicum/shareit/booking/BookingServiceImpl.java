@@ -8,6 +8,7 @@ import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.booking.BookingStatus;
 import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.exception.BookingValidationException;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Item;
@@ -30,48 +31,62 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto addBooking(Long userId, BookingDto bookingDto) {
-        if (bookingDto.getItemId() == null || bookingDto.getBookerId() == null) {
-            throw new IllegalArgumentException("Item ID and Booker ID cannot be null");
+        // Проверка на null для itemId и bookerId
+        if (bookingDto.getItemId() == null) {
+            throw new BookingValidationException("Item ID cannot be null");
         }
-        User user = userRepository.findById(userId)
+        if (bookingDto.getBookerId() == null) {
+            throw new BookingValidationException("Booker ID cannot be null");
+        }
+
+        // Получение User и Item из репозитория
+        User booker = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
         Item item = itemRepository.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException("Item not found"));
 
+        // Проверка доступности вещи
         if (!item.getAvailable()) {
             throw new ValidationException("Item is not available for booking");
         }
 
+        // Получение start и end из BookingDto
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
 
-        if (start == null || end == null) {
-            throw new IllegalArgumentException("Start and end dates cannot be null");
+        // Проверка на null для start и end
+        if (start == null) {
+            throw new BookingValidationException("Start date cannot be null");
+        }
+        if (end == null) {
+            throw new BookingValidationException("End date cannot be null");
         }
 
+        // Проверка дат
         if (start.isBefore(LocalDateTime.now()) || end.isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Start and end dates must be in the future");
+            throw new BookingValidationException("Start and end dates must be in the future");
         }
-
         if (start.isAfter(end)) {
-            throw new IllegalArgumentException("Start date cannot be after end date");
+            throw new BookingValidationException("Start date cannot be after end date");
         }
-
         if (start.equals(end)) {
-            throw new IllegalArgumentException("Start date cannot be the same as end date");
+            throw new BookingValidationException("Start date cannot be the same as end date");
         }
 
+        // Проверка, что владелец не может забронировать свою вещь
         if (item.getOwner().getId().equals(userId)) {
             throw new NotFoundException("Owner cannot book their own item");
         }
 
         Booking booking = bookingMapper.toBooking(bookingDto);
-        booking.setBooker(user);
+        booking.setBooker(booker);
         booking.setItem(item);
         booking.setStart(start);
         booking.setEnd(end);
         booking.setStatus(BookingStatus.WAITING);
+
         booking = bookingRepository.save(booking);
+
         return bookingMapper.toBookingDto(booking);
     }
 

@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.exception.BookingValidationException;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -19,8 +20,11 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<BookingDto> addBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                  @Valid @RequestBody BookingDto bookingDto) {
-
-        return new ResponseEntity<>(bookingService.addBooking(userId, bookingDto), HttpStatus.CREATED);
+        try{
+            return new ResponseEntity<>(bookingService.addBooking(userId, bookingDto), HttpStatus.CREATED);
+        } catch (BookingValidationException e) {
+            return new ResponseEntity(e.getMessage(), HttpStatus.BAD_REQUEST);
+        }
     }
 
     @PatchMapping("/{bookingId}")
