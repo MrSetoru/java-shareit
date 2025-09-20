@@ -11,7 +11,6 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -24,11 +23,9 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
     private final BookingMapper bookingMapper;
 
-    private final DateTimeFormatter formatter = DateTimeFormatter.ISO_LOCAL_DATE_TIME;
-
     @Override
     public BookingDto addBooking(Long userId, BookingDto bookingDto) {
-        User user = userRepository.findById(userId)
+        User booker = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
         Item item = itemRepository.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException("Item not found"));
@@ -37,8 +34,8 @@ public class BookingServiceImpl implements BookingService {
             throw new ValidationException("Item is not available for booking");
         }
 
-        LocalDateTime start = LocalDateTime.parse(bookingDto.getStart(), formatter);
-        LocalDateTime end = LocalDateTime.parse(bookingDto.getEnd(), formatter);
+        LocalDateTime start = bookingDto.getStart();
+        LocalDateTime end = bookingDto.getEnd();
 
         if (start.isAfter(end)) {
             throw new ValidationException("Start date cannot be after end date");
@@ -53,7 +50,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking booking = bookingMapper.toBooking(bookingDto);
-        booking.setBooker(user);
+        booking.setBooker(booker);
         booking.setItem(item);
         booking.setStart(start);
         booking.setEnd(end);

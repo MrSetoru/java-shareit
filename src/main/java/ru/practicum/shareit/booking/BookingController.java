@@ -7,8 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.practicum.shareit.booking.service.BookingService;
 
 import javax.validation.Valid;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @RestController
@@ -21,8 +19,6 @@ public class BookingController {
     @PostMapping
     public ResponseEntity<BookingDto> addBooking(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                  @Valid @RequestBody BookingDto bookingDto) {
-        LocalDateTime start = LocalDateTime.parse(bookingDto.getStart(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        LocalDateTime end = LocalDateTime.parse(bookingDto.getEnd(), DateTimeFormatter.ISO_LOCAL_DATE_TIME);
 
         return new ResponseEntity<>(bookingService.addBooking(userId, bookingDto), HttpStatus.CREATED);
     }
