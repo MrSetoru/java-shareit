@@ -76,10 +76,10 @@ public class ItemServiceImpl implements ItemService {
 
         LocalDateTime now = LocalDateTime.now();
 
-        List<Booking> lastBookings = bookingRepository.findByItemAndStatusAndEndBeforeOrderByEndDesc(item, BookingStatus.APPROVED, now);
+        List<Booking> lastBookings = bookingRepository.findByItemIdAndStatusAndEndBeforeOrderByEndDesc(itemId, BookingStatus.APPROVED, now);
         Booking lastBooking = lastBookings.isEmpty() ? null : lastBookings.get(0);
 
-        List<Booking> nextBookings = bookingRepository.findByItemAndStatusAndStartAfterOrderByStartAsc(item, BookingStatus.APPROVED, now);
+        List<Booking> nextBookings = bookingRepository.findByItemIdAndStatusAndStartAfterOrderByStartAsc(itemId, BookingStatus.APPROVED, now);
         Booking nextBooking = nextBookings.isEmpty() ? null : nextBookings.get(0);
 
         List<CommentDto> comments = item.getComments().stream()
@@ -128,7 +128,7 @@ public class ItemServiceImpl implements ItemService {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
 
-        List<Booking> bookings = bookingRepository.findByBookerAndItemAndEndBefore(author, item, LocalDateTime.now());
+        List<Booking> bookings = bookingRepository.findByBookerIdAndItemIdAndEndBefore(userId, itemId, LocalDateTime.now());
         if (bookings.isEmpty()) {
             throw new ValidationException("User " + userId + " did not rent item " + itemId);
         }

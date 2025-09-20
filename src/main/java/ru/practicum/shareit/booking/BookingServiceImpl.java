@@ -1,7 +1,12 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import ru.practicum.shareit.booking.BookingDto;
+import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingStatus;
+import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingService;
 import ru.practicum.shareit.exception.NotFoundException;
 import ru.practicum.shareit.exception.ValidationException;
@@ -25,7 +30,10 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto addBooking(Long userId, BookingDto bookingDto) {
-        User booker = userRepository.findById(userId)
+        if (bookingDto.getItemId() == null || bookingDto.getBookerId() == null) {
+            throw new IllegalArgumentException("Item ID and Booker ID cannot be null");
+        }
+        User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
         Item item = itemRepository.findById(bookingDto.getItemId())
                 .orElseThrow(() -> new NotFoundException("Item not found"));
@@ -37,12 +45,20 @@ public class BookingServiceImpl implements BookingService {
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
 
+        if (start == null || end == null) {
+            throw new IllegalArgumentException("Start and end dates cannot be null");
+        }
+
+        if (start.isBefore(LocalDateTime.now()) || end.isBefore(LocalDateTime.now())) {
+            throw new IllegalArgumentException("Start and end dates must be in the future");
+        }
+
         if (start.isAfter(end)) {
-            throw new ValidationException("Start date cannot be after end date");
+            throw new IllegalArgumentException("Start date cannot be after end date");
         }
 
         if (start.equals(end)) {
-            throw new ValidationException("Start date cannot be the same as end date");
+            throw new IllegalArgumentException("Start date cannot be the same as end date");
         }
 
         if (item.getOwner().getId().equals(userId)) {
@@ -50,7 +66,7 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking booking = bookingMapper.toBooking(bookingDto);
-        booking.setBooker(booker);
+        booking.setBooker(user);
         booking.setItem(item);
         booking.setStart(start);
         booking.setEnd(end);
@@ -97,25 +113,26 @@ public class BookingServiceImpl implements BookingService {
 
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings;
+        Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         switch (state) {
             case CURRENT:
-                bookings = bookingRepository.findByBookerAndStartBeforeAndEndAfterOrderByStartDesc(user, now, now);
+                bookings = bookingRepository.findByBookerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
                 break;
             case PAST:
-                bookings = bookingRepository.findByBookerAndEndBeforeOrderByStartDesc(user, now);
+                bookings = bookingRepository.findByBookerIdAndEndBefore(userId, now, sort);
                 break;
             case FUTURE:
-                bookings = bookingRepository.findByBookerAndStartAfterOrderByStartDesc(user, now);
+                bookings = bookingRepository.findByBookerIdAndStartAfter(userId, now, sort);
                 break;
             case WAITING:
-                bookings = bookingRepository.findByBookerAndStatusOrderByStartDesc(user, BookingStatus.WAITING);
+                bookings = bookingRepository.findByBookerIdAndStatus(userId, BookingStatus.WAITING, sort);
                 break;
             case REJECTED:
-                bookings = bookingRepository.findByBookerAndStatusOrderByStartDesc(user, BookingStatus.REJECTED);
+                bookings = bookingRepository.findByBookerIdAndStatus(userId, BookingStatus.REJECTED, sort);
                 break;
             case ALL:
-                bookings = bookingRepository.findByBookerOrderByStartDesc(user);
+                bookings = bookingRepository.findByBookerId(userId, sort);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown state: " + state);
@@ -133,25 +150,26 @@ public class BookingServiceImpl implements BookingService {
 
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings;
+        Sort sort = Sort.by(Sort.Direction.DESC, "start");
 
         switch (state) {
             case CURRENT:
-                bookings = bookingRepository.findByItemOwnerAndStartBeforeAndEndAfterOrderByStartDesc(user, now, now);
+                bookings = bookingRepository.findByItemOwnerIdAndStartBeforeAndEndAfter(userId, now, now, sort);
                 break;
             case PAST:
-                bookings = bookingRepository.findByItemOwnerAndEndBeforeOrderByStartDesc(user, now);
+                bookings = bookingRepository.findByItemOwnerIdAndEndBefore(userId, now, sort);
                 break;
             case FUTURE:
-                bookings = bookingRepository.findByItemOwnerAndStartAfterOrderByStartDesc(user, now);
+                bookings = bookingRepository.findByItemOwnerIdAndStartAfter(userId, now, sort);
                 break;
             case WAITING:
-                bookings = bookingRepository.findByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.WAITING);
+                bookings = bookingRepository.findByItemOwnerIdAndStatus(userId, BookingStatus.WAITING, sort);
                 break;
             case REJECTED:
-                bookings = bookingRepository.findByItemOwnerAndStatusOrderByStartDesc(user, BookingStatus.REJECTED);
+                bookings = bookingRepository.findByItemOwnerIdAndStatus(userId, BookingStatus.REJECTED, sort);
                 break;
             case ALL:
-                bookings = bookingRepository.findByItemOwnerOrderByStartDesc(user);
+                bookings = bookingRepository.findByItemOwnerId(userId, sort);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown state: " + state);
