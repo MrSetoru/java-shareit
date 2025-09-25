@@ -6,11 +6,11 @@
         </encoder>
     </appender>
 
-    <root level="INFO">
+    <root level="DEBUG">
         <appender-ref ref="Console"/>
     </root>
 
-    <logger name="ru.practicum.shareit" level="DEBUG" additivity="false">
+    <logger name="ru.practicum.shareit" level="DEBUG" additivity="true"> <!-- ИЗМЕНЕНО: additivity на true -->
         <appender-ref ref="Console"/>
     </logger>
 

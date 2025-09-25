@@ -4,22 +4,27 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import ru.practicum.shareit.booking.Booking;
+import ru.practicum.shareit.booking.BookingStatus;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public interface ItemRepository extends JpaRepository<Item, Long> {
 
     List<Item> findByOwnerId(Long ownerId);
 
-    List<Item> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(String text, String text1);
+    @Query("SELECT i FROM Item i " +
+            "LEFT JOIN FETCH i.bookings " +
+            "LEFT JOIN FETCH i.comments " +
+            "WHERE upper(i.name) LIKE upper(concat('%', :text, '%')) OR upper(i.description) LIKE upper(concat('%', :text, '%'))")
+    List<Item> findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(@Param("text") String text, @Param("text") String text1);
 
     List<Item> findByAvailableTrueAndOwnerId(Long ownerId);
 
     List<Item> findByRequestId(Long requestId);
 
-    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.status = 'APPROVED' AND b.end < CURRENT_TIMESTAMP ORDER BY b.end DESC")
-    List<Booking> findLastBookingsForApprovedItems(@Param("itemId") Long itemId);
+    Optional<Booking> findFirstByItemIdAndStatusAndEndBeforeOrderByEndDesc(Long itemId, BookingStatus status, LocalDateTime end);
 
-    @Query("SELECT b FROM Booking b WHERE b.item.id = :itemId AND b.status = 'APPROVED' AND b.start > CURRENT_TIMESTAMP ORDER BY b.start ASC")
-    List<Booking> findNextBookingsForApprovedItems(@Param("itemId") Long itemId);
+    Optional<Booking> findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(Long itemId, BookingStatus status, LocalDateTime start);
 }

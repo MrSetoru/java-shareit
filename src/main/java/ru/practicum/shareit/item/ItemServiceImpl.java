@@ -16,6 +16,7 @@ import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -68,6 +69,17 @@ public class ItemServiceImpl implements ItemService {
 
         Item updatedItem = itemRepository.save(existingItem);
         return itemMapper.toItemDto(updatedItem);
+    }
+
+    @Override
+    public List<Item> searchItems(String text) {
+        log.info("Searching items containing text: {}", text);
+
+        if (text == null || text.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        return itemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text);
     }
 
     @Override

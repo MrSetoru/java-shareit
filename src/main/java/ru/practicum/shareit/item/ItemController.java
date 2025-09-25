@@ -2,13 +2,16 @@ package ru.practicum.shareit.item;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
+@Slf4j
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
@@ -16,6 +19,7 @@ import java.util.List;
 public class ItemController {
 
     private final ItemService itemService;
+    private final ItemMapper itemMapper;
 
     @PostMapping
     public ResponseEntity<ItemDto> addItem(@RequestHeader("X-Sharer-User-Id") Long userId,
@@ -36,9 +40,18 @@ public class ItemController {
         return ResponseEntity.ok(itemService.getItemById(itemId, userId));
     }
 
-    @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItemsByUserId(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return ResponseEntity.ok(itemService.getAllItemsByUserId(userId));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<ItemDto>> searchItems(@RequestParam String text) {
+        log.info("Searching items containing text: {}", text); // Логируем запрос
+        List<Item> items = itemService.searchItems(text);
+        return new ResponseEntity<>(items.stream()
+                .map(itemMapper::toItemDto)
+                .collect(Collectors.toList()),
+                HttpStatus.OK);
     }
 
     @DeleteMapping("/{itemId}")
