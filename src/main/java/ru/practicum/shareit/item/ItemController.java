@@ -40,6 +40,7 @@ public class ItemController {
         return ResponseEntity.ok(itemService.getItemById(itemId, userId));
     }
 
+    @GetMapping
     public ResponseEntity<List<ItemDto>> getAllItemsByUserId(@RequestHeader("X-Sharer-User-Id") Long userId) {
         return ResponseEntity.ok(itemService.getAllItemsByUserId(userId));
     }
