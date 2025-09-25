@@ -1,10 +1,7 @@
 package ru.practicum.shareit.item;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Builder;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import ru.practicum.shareit.booking.Booking;
 import ru.practicum.shareit.user.User;
 
@@ -13,7 +10,8 @@ import java.util.HashSet;
 
 @Entity
 @Table(name = "items")
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
