@@ -9,7 +9,7 @@ import ru.practicum.shareit.user.User;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
-import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
@@ -25,6 +25,10 @@ public class ItemMapper {
         if (item == null) {
             return null;
         }
+
+        Set<Booking> bookings = item.getBookings() != null ? item.getBookings() : Collections.emptySet();
+        Set<Comment> comments = item.getComments() != null ? item.getComments() : Collections.emptySet();
+
         return ItemDto.builder()
                 .id(item.getId())
                 .name(item.getName())
@@ -32,11 +36,11 @@ public class ItemMapper {
                 .available(item.getAvailable())
                 .ownerId(item.getOwner().getId())
                 .requestId(item.getRequestId())
-                .lastBooking(mapBookingToShortDto(getLastBooking(item.getBookings())))
-                .nextBooking(mapBookingToShortDto(getNextBooking(item.getBookings())))
-                .comments(item.getComments() != null ? item.getComments().stream()
+                .lastBooking(mapBookingToShortDto(getLastBooking(bookings)))
+                .nextBooking(mapBookingToShortDto(getNextBooking(bookings)))
+                .comments(comments.stream()
                         .map(this::toCommentDto)
-                        .collect(Collectors.toList()) : Collections.emptyList())
+                        .collect(Collectors.toList()))
                 .build();
     }
 
@@ -52,7 +56,7 @@ public class ItemMapper {
                 .build();
     }
 
-    private Booking getLastBooking(List<Booking> bookings) {
+    private Booking getLastBooking(Set<Booking> bookings) {
         if (bookings == null || bookings.isEmpty()) {
             return null;
         }
@@ -64,7 +68,7 @@ public class ItemMapper {
                 .orElse(null);
     }
 
-    private Booking getNextBooking(List<Booking> bookings) {
+    private Booking getNextBooking(Set<Booking> bookings) {
         if (bookings == null || bookings.isEmpty()) {
             return null;
         }

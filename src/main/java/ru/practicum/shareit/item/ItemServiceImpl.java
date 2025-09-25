@@ -2,6 +2,7 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
@@ -17,7 +18,9 @@ import ru.practicum.shareit.user.UserRepository;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -79,7 +82,22 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
 
-        return itemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text);
+        List<Item> items = itemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text);
+        Sort sort = Sort.by(Sort.Direction.DESC, "end");
+
+        for (Item item : items) {
+            List<Booking> bookingsList = bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED, sort);
+            Set<Booking> bookings = new HashSet<>(bookingsList);
+            item.setBookings(bookings);
+        }
+
+        for (Item item : items) {
+            List<Comment> commentsList = commentRepository.findByItem_Id(item.getId());
+            Set<Comment> comments = new HashSet<>(commentsList);
+            item.setComments(comments);
+        }
+
+        return items;
     }
 
     @Override
