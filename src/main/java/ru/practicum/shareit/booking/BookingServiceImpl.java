@@ -1,16 +1,11 @@
 package ru.practicum.shareit.booking;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
-import ru.practicum.shareit.booking.BookingDto;
-import ru.practicum.shareit.booking.Booking;
-import ru.practicum.shareit.booking.BookingStatus;
-import ru.practicum.shareit.booking.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingService;
-import ru.practicum.shareit.exception.BookingValidationException;
-import ru.practicum.shareit.exception.NotFoundException;
-import ru.practicum.shareit.exception.ValidationException;
+import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemRepository;
 import ru.practicum.shareit.user.User;
@@ -22,6 +17,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingServiceImpl implements BookingService {
 
     private final BookingRepository bookingRepository;
@@ -31,61 +27,59 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public BookingDto addBooking(Long userId, BookingDto bookingDto) {
-        // Проверка на null для itemId и bookerId
-        if (bookingDto.getItemId() == null) {
-            throw new BookingValidationException("Item ID cannot be null");
-        }
-        if (bookingDto.getBookerId() == null) {
-            throw new BookingValidationException("Booker ID cannot be null");
-        }
+        log.info("Received request to add booking for userId: {} with bookingDto: {}", userId, bookingDto);
 
-        // Получение User и Item из репозитория
         User booker = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
         Item item = itemRepository.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Item not found"));
+                .orElseThrow(() -> new ItemNotFoundException("Item with id " + bookingDto.getItemId() + " not found"));
 
-        // Проверка доступности вещи
         if (!item.getAvailable()) {
+            log.warn("Attempt to book unavailable item with id: {}", item.getId());
             throw new ValidationException("Item is not available for booking");
         }
 
-        // Получение start и end из BookingDto
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
 
-        // Проверка на null для start и end
         if (start == null) {
+            log.warn("Booking creation failed: start date is null for userId: {}, itemId: {}", userId, item.getId());
             throw new BookingValidationException("Start date cannot be null");
         }
         if (end == null) {
+            log.warn("Booking creation failed: end date is null for userId: {}, itemId: {}", userId, item.getId());
             throw new BookingValidationException("End date cannot be null");
         }
 
-        // Проверка дат
         if (start.isBefore(LocalDateTime.now()) || end.isBefore(LocalDateTime.now())) {
+            log.warn("Booking creation failed: start or end date is in the past for userId: {}, itemId: {}", userId, item.getId());
             throw new BookingValidationException("Start and end dates must be in the future");
         }
+
         if (start.isAfter(end)) {
+            log.warn("Booking creation failed: start date '{}' is after end date '{}' for userId: {}, itemId: {}", start, end, userId, item.getId());
             throw new BookingValidationException("Start date cannot be after end date");
         }
+
         if (start.equals(end)) {
+            log.warn("Booking creation failed: start date is equal to end date for userId: {}, itemId: {}", userId, item.getId());
             throw new BookingValidationException("Start date cannot be the same as end date");
         }
 
-        // Проверка, что владелец не может забронировать свою вещь
         if (item.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Owner cannot book their own item");
+            log.warn("Booking creation failed: owner (userId: {}) tried to book their own item (itemId: {})", userId, item.getId());
+            throw new ForbiddenException("Owner cannot book their own item");
         }
 
         Booking booking = bookingMapper.toBooking(bookingDto);
         booking.setBooker(booker);
         booking.setItem(item);
+        booking.setStatus(BookingStatus.WAITING);
         booking.setStart(start);
         booking.setEnd(end);
-        booking.setStatus(BookingStatus.WAITING);
 
         booking = bookingRepository.save(booking);
+        log.info("Booking created successfully for userId: {}, bookingId: {}", userId, booking.getId());
 
         return bookingMapper.toBookingDto(booking);
     }
@@ -93,10 +87,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto confirmOrRejectBooking(Long bookingId, Long userId, Boolean approved) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Booking not found"));
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
 
         if (!booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Only the item owner can confirm or reject the booking");
+            throw new ForbiddenException("Only the item owner can confirm or reject the booking");
         }
 
         if (booking.getStatus() != BookingStatus.WAITING) {
@@ -112,10 +106,10 @@ public class BookingServiceImpl implements BookingService {
     @Override
     public BookingDto getBookingById(Long bookingId, Long userId) {
         Booking booking = bookingRepository.findById(bookingId)
-                .orElseThrow(() -> new NotFoundException("Booking not found"));
+                .orElseThrow(() -> new BookingNotFoundException("Booking not found"));
 
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Only the booker or the item owner can view the booking");
+            throw new ForbiddenException("Only the booker or the item owner can view the booking");
         }
 
         return bookingMapper.toBookingDto(booking);
@@ -123,8 +117,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingDto> getAllBookingsByUserId(Long userId, BookingState state) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
 
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings;
@@ -149,6 +143,9 @@ public class BookingServiceImpl implements BookingService {
             case ALL:
                 bookings = bookingRepository.findByBookerId(userId, sort);
                 break;
+            case CANCELED:
+                bookings = bookingRepository.findByBookerIdAndStatus(userId, BookingStatus.CANCELED, sort);
+                break;
             default:
                 throw new IllegalArgumentException("Unknown state: " + state);
         }
@@ -160,8 +157,8 @@ public class BookingServiceImpl implements BookingService {
 
     @Override
     public List<BookingDto> getAllBookingsByOwnerId(Long userId, BookingState state) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("User not found"));
+        userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
 
         LocalDateTime now = LocalDateTime.now();
         List<Booking> bookings;
@@ -185,6 +182,9 @@ public class BookingServiceImpl implements BookingService {
                 break;
             case ALL:
                 bookings = bookingRepository.findByItemOwnerId(userId, sort);
+                break;
+            case CANCELED:
+                bookings = bookingRepository.findByItemOwnerIdAndStatus(userId, BookingStatus.CANCELED, sort);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown state: " + state);

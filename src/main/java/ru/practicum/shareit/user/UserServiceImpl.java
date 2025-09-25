@@ -4,8 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.practicum.shareit.exception.UserNotFoundException;
 import ru.practicum.shareit.exception.ConflictException;
+import ru.practicum.shareit.exception.UserNotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -24,6 +25,16 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User createUser(UserDto userDto) {
         log.info("Creating user: {}", userDto);
+
+        if (userDto.getEmail() != null && !userDto.getEmail().isBlank()) {
+            Optional<User> existingUserWithEmail = userRepository.findByEmail(userDto.getEmail());
+            if (existingUserWithEmail.isPresent()) {
+                throw new ConflictException("User with email " + userDto.getEmail() + " already exists");
+            }
+        } else {
+            throw new ValidationException("User email cannot be blank or null");
+        }
+
         User user = userMapper.fromUserDto(userDto);
         return userRepository.save(user);
     }
@@ -58,7 +69,7 @@ public class UserServiceImpl implements UserService {
         if (userDto.getEmail() != null && !userDto.getEmail().isBlank() && !userDto.getEmail().equals(userToUpdate.getEmail())) {
             Optional<User> existingUserWithEmail = userRepository.findByEmail(userDto.getEmail());
             if (existingUserWithEmail.isPresent() && !existingUserWithEmail.get().getId().equals(userId)) {
-                throw new ConflictException("Email already exists");
+                throw new ConflictException("User with email " + userDto.getEmail() + " already exists");
             }
             userToUpdate.setEmail(userDto.getEmail());
         }

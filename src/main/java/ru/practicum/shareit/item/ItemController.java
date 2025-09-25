@@ -1,16 +1,18 @@
 package ru.practicum.shareit.item;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
 import java.util.List;
 
 @RestController
 @RequestMapping("/items")
 @RequiredArgsConstructor
+@Validated
 public class ItemController {
 
     private final ItemService itemService;
@@ -29,8 +31,8 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemWithCommentsDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
-                                                           @PathVariable Long itemId) {
+    public ResponseEntity<ItemDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId, // Теперь ожидает ItemDto
+                                               @PathVariable Long itemId) {
         return ResponseEntity.ok(itemService.getItemById(itemId, userId));
     }
 
