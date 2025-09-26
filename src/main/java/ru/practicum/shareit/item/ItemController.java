@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -35,7 +36,7 @@ public class ItemController {
     }
 
     @GetMapping("/{itemId}")
-    public ResponseEntity<ItemDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId, // Теперь ожидает ItemDto
+    public ResponseEntity<ItemDto> getItemById(@RequestHeader("X-Sharer-User-Id") Long userId,
                                                @PathVariable Long itemId) {
         return ResponseEntity.ok(itemService.getItemById(itemId, userId));
     }
@@ -47,7 +48,7 @@ public class ItemController {
 
     @GetMapping("/search")
     public ResponseEntity<List<ItemDto>> searchItems(@RequestParam String text) {
-        log.info("Searching items containing text: {}", text); // Логируем запрос
+        log.info("Searching items containing text: {}", text);
         List<Item> items = itemService.searchItems(text);
         return new ResponseEntity<>(items.stream()
                 .map(itemMapper::toItemDto)
@@ -62,13 +63,12 @@ public class ItemController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping(value = "/{itemId}/comment", consumes = "text/plain", produces = "application/json")
+    @PostMapping(value = "/{itemId}/comment", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<CommentDto> addComment(
             @RequestHeader("X-Sharer-User-Id") Long userId,
             @PathVariable Long itemId,
-            @RequestBody String text) {
+            @RequestBody CommentDto commentDto) {
 
-        CommentDto commentDto = CommentDto.builder().text(text).build();
         return new ResponseEntity<>(itemService.addComment(itemId, userId, commentDto), HttpStatus.OK);
     }
 }
