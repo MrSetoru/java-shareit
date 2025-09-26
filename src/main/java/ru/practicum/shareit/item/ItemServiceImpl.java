@@ -75,6 +75,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public List<Item> searchItems(String text) {
         log.info("Searching items containing text: {}", text);
 
@@ -101,6 +102,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public ItemDto getItemById(Long itemId, Long userId) {
         log.info("Getting item with id {} for user {}", itemId, userId);
         Item item = itemRepository.findById(itemId)
@@ -129,6 +131,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public List<ItemDto> getAllItemsByUserId(Long userId) {
         log.info("Getting all items for user with id {}", userId);
         userRepository.findById(userId)
@@ -141,6 +144,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public void deleteItem(Long userId, Long itemId) {
         log.info("Deleting item with id {} for user with id {}", itemId, userId);
         Item existingItem = itemRepository.findById(itemId)
@@ -152,6 +156,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
+    @Transactional
     public CommentDto addComment(Long itemId, Long userId, CommentDto commentDto) {
         log.info("Adding comment to item with id {} from user with id {}", itemId, userId);
         Item item = itemRepository.findById(itemId)
@@ -182,6 +187,7 @@ public class ItemServiceImpl implements ItemService {
         return toCommentDto(comment);
     }
 
+    @Transactional
     private CommentDto toCommentDto(Comment comment) {
         if (comment == null || comment.getAuthor() == null) {
             return null;
