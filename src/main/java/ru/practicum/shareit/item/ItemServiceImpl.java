@@ -83,22 +83,30 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
 
-        List<Item> items = itemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text);
-        Sort sort = Sort.by(Sort.Direction.DESC, "end");
+        List<Item> foundItems = itemRepository.findByNameContainingIgnoreCaseOrDescriptionContainingIgnoreCase(text, text);
 
-        for (Item item : items) {
+        List<Item> availableItems = foundItems.stream()
+                .filter(Item::getAvailable)
+                .collect(Collectors.toList());
+
+        if (availableItems.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        Sort sort = Sort.by(Sort.Direction.DESC, "end");
+        for (Item item : availableItems) {
             List<Booking> bookingsList = bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED, sort);
             Set<Booking> bookings = new HashSet<>(bookingsList);
             item.setBookings(bookings);
         }
 
-        for (Item item : items) {
+        for (Item item : availableItems) {
             List<Comment> commentsList = commentRepository.findByItem_Id(item.getId());
             Set<Comment> comments = new HashSet<>(commentsList);
             item.setComments(comments);
         }
 
-        return items;
+        return availableItems;
     }
 
     @Override
