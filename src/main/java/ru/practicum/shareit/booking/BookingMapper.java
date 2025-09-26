@@ -46,6 +46,9 @@ public class BookingMapper {
 
     @Transactional
     public BookingDto toBookingShortDto(Booking booking) {
+        if (booking == null) {
+            return null;
+        }
         BookingDto dto = new BookingDto();
         dto.setId(booking.getId());
         dto.setItemId(booking.getItem().getId());
