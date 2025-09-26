@@ -103,26 +103,37 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItemById(Long itemId, Long userId) {
         log.info("Getting item with id {} for user {}", itemId, userId);
+
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Item with id " + itemId + " not found"));
 
-        LocalDateTime now = LocalDateTime.now();
+        if (item.getOwner().getId().equals(userId)) {
+            LocalDateTime now = LocalDateTime.now();
 
-        Booking lastBooking = bookingRepository.findFirstByItemIdAndStatusAndEndBeforeOrderByEndDesc(itemId, BookingStatus.APPROVED, now)
-                .orElse(null);
-        Booking nextBooking = bookingRepository.findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(itemId, BookingStatus.APPROVED, now)
-                .orElse(null);
+            Booking lastBooking = bookingRepository.findFirstByItemIdAndStatusAndEndBeforeOrderByEndDesc(itemId, BookingStatus.APPROVED, now)
+                    .orElse(null);
+            Booking nextBooking = bookingRepository.findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(itemId, BookingStatus.APPROVED, now)
+                    .orElse(null);
 
-        List<CommentDto> comments = item.getComments().stream()
-                .map(this::toCommentDto)
-                .collect(Collectors.toList());
+            ItemDto itemDto = itemMapper.toItemDto(item);
+            itemDto.setLastBooking(bookingMapper.toBookingShortDto(lastBooking));
+            itemDto.setNextBooking(bookingMapper.toBookingShortDto(nextBooking));
 
-        ItemDto itemDto = itemMapper.toItemDto(item);
-        itemDto.setLastBooking(bookingMapper.toBookingShortDto(lastBooking));
-        itemDto.setNextBooking(bookingMapper.toBookingShortDto(nextBooking));
-        itemDto.setComments(comments);
+            List<CommentDto> comments = item.getComments().stream()
+                    .map(this::toCommentDto)
+                    .collect(Collectors.toList());
+            itemDto.setComments(comments);
+            return itemDto;
+        } else {
 
-        return itemDto;
+            ItemDto itemDto = itemMapper.toItemDto(item);
+            List<CommentDto> comments = item.getComments().stream()
+                    .map(this::toCommentDto)
+                    .collect(Collectors.toList());
+            itemDto.setComments(comments);
+
+            return itemDto;
+        }
     }
 
     @Override

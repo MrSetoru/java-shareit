@@ -63,7 +63,6 @@ public class BookingServiceImpl implements BookingService {
         }
 
         Booking booking = bookingMapper.toBooking(bookingDto, item, booker);
-
         booking.setStatus(BookingStatus.WAITING);
         booking = bookingRepository.save(booking);
 
@@ -109,15 +108,16 @@ public class BookingServiceImpl implements BookingService {
 
         if (!booking.getBooker().getId().equals(userId) && !booking.getItem().getOwner().getId().equals(userId)) {
             throw new ForbiddenException("Only the booker or the item owner can view the booking");
-        }
-        Item item = booking.getItem();
-        User booker = booking.getBooker();
-        ItemDto itemDto = itemMapper.toItemDto(item);
-        UserDto bookerDto = userMapper.toUserDto(booker);
+        } else {
+            Item item = booking.getItem();
+            User booker = booking.getBooker();
+            ItemDto itemDto = itemMapper.toItemDto(item);
+            UserDto bookerDto = userMapper.toUserDto(booker);
 
-        BookingDto bookingDtoResult = bookingMapper.toBookingDto(booking, itemDto, bookerDto);
-        bookingDtoResult.setStatus(booking.getStatus().toString());
-        return bookingDtoResult;
+            BookingDto bookingDtoResult = bookingMapper.toBookingDto(booking, itemDto, bookerDto);
+            bookingDtoResult.setStatus(booking.getStatus().toString());
+            return bookingDtoResult;
+        }
     }
 
     @Override
