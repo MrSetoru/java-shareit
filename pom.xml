@@ -253,5 +253,8 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>check</id>
+        </profile>
     </profiles>
 </project>
