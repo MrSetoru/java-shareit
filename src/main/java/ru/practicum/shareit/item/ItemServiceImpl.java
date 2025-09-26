@@ -103,9 +103,10 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDto getItemById(Long itemId, Long userId) {
         log.info("Getting item with id {} for user {}", itemId, userId);
-
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new ItemNotFoundException("Item with id " + itemId + " not found"));
+
+        ItemDto itemDto = itemMapper.toItemDto(item);
 
         if (item.getOwner().getId().equals(userId)) {
             LocalDateTime now = LocalDateTime.now();
@@ -115,25 +116,16 @@ public class ItemServiceImpl implements ItemService {
             Booking nextBooking = bookingRepository.findFirstByItemIdAndStatusAndStartAfterOrderByStartAsc(itemId, BookingStatus.APPROVED, now)
                     .orElse(null);
 
-            ItemDto itemDto = itemMapper.toItemDto(item);
             itemDto.setLastBooking(bookingMapper.toBookingShortDto(lastBooking));
             itemDto.setNextBooking(bookingMapper.toBookingShortDto(nextBooking));
-
-            List<CommentDto> comments = item.getComments().stream()
-                    .map(this::toCommentDto)
-                    .collect(Collectors.toList());
-            itemDto.setComments(comments);
-            return itemDto;
-        } else {
-
-            ItemDto itemDto = itemMapper.toItemDto(item);
-            List<CommentDto> comments = item.getComments().stream()
-                    .map(this::toCommentDto)
-                    .collect(Collectors.toList());
-            itemDto.setComments(comments);
-
-            return itemDto;
         }
+
+        List<CommentDto> comments = item.getComments().stream()
+                .map(this::toCommentDto)
+                .collect(Collectors.toList());
+        itemDto.setComments(comments);
+
+        return itemDto;
     }
 
     @Override
