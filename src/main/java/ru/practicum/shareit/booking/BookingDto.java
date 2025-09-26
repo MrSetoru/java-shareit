@@ -2,6 +2,8 @@ package ru.practicum.shareit.booking;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+import ru.practicum.shareit.item.ItemDto;
+import ru.practicum.shareit.user.UserDto;
 
 import java.time.LocalDateTime;
 
@@ -12,7 +14,6 @@ public class BookingDto {
     @NotNull(message = "Item ID cannot be null")
     private Long itemId;
 
-    @NotNull(message = "Booker ID cannot be null")
     private Long bookerId;
 
     @NotNull(message = "Start time cannot be null")
@@ -24,4 +25,7 @@ public class BookingDto {
     private String status;
     private String itemName;
     private String bookerName;
+
+    private ItemDto item;
+    private UserDto booker;
 }

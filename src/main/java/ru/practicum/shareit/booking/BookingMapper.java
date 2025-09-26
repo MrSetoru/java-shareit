@@ -1,10 +1,10 @@
 package ru.practicum.shareit.booking;
 
 import org.springframework.stereotype.Component;
-import ru.practicum.shareit.exception.NotFoundException;
+import ru.practicum.shareit.exception.ItemNotFoundException;
+import ru.practicum.shareit.exception.ValidationException;
 import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemRepository;
-import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserRepository;
 
 @Component
@@ -40,14 +40,14 @@ public class BookingMapper {
         if (bookingDto == null) {
             return null;
         }
+        if (bookingDto.getItemId() == null) {
+            throw new ValidationException("Item ID cannot be null");
+        }
         Item item = itemRepository.findById(bookingDto.getItemId())
-                .orElseThrow(() -> new NotFoundException("Item not found"));
-        User booker = userRepository.findById(bookingDto.getBookerId())
-                .orElseThrow(() -> new NotFoundException("User not found"));
+                .orElseThrow(() -> new ItemNotFoundException("Item not found"));
 
         Booking booking = Booking.builder()
                 .item(item)
-                .booker(booker)
                 .start(bookingDto.getStart())
                 .end(bookingDto.getEnd())
                 .build();
