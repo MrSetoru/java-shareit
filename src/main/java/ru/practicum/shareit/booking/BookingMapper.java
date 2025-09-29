@@ -44,7 +44,6 @@ public class BookingMapper {
         return booking;
     }
 
-    @Transactional
     public BookingDto toBookingShortDto(Booking booking) {
         if (booking == null) {
             return null;

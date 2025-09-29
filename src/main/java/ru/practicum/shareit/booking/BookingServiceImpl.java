@@ -32,7 +32,6 @@ public class BookingServiceImpl implements BookingService {
     private final UserMapper userMapper;
 
     @Override
-    @Transactional
     public BookingDto addBooking(Long userId, BookingDto bookingDto) {
         User booker = userRepository.findById(userId)
                 .orElseThrow(() -> new UserNotFoundException("User with id " + userId + " not found"));
@@ -46,17 +45,12 @@ public class BookingServiceImpl implements BookingService {
         LocalDateTime start = bookingDto.getStart();
         LocalDateTime end = bookingDto.getEnd();
 
-        if (start == null) {
-            throw new BookingValidationException("Start date cannot be null");
+        if (start == null || end == null) {
+            throw new BookingValidationException("Start and end dates cannot be null");
         }
-        if (end == null) {
-            throw new BookingValidationException("End date cannot be null");
-        }
-        if (start.isAfter(end)) {
-            throw new BookingValidationException("Start date cannot be after end date");
-        }
-        if (start.equals(end)) {
-            throw new BookingValidationException("Start date cannot be the same as end date");
+
+        if (!start.isBefore(end)) { // start >= end
+            throw new BookingValidationException("Start date must be before end date");
         }
 
         if (item.getOwner().getId().equals(userId)) {
