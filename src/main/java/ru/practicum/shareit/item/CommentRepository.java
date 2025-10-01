@@ -16,4 +16,5 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findCommentsForItemsInList(
             @Param("itemIds") List<Long> itemIds
     );
+
 }
