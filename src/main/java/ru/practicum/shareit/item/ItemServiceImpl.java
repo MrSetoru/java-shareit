@@ -2,7 +2,6 @@ package ru.practicum.shareit.item;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.Booking;
@@ -20,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -75,7 +74,7 @@ public class ItemServiceImpl implements ItemService {
     }
 
     @Override
-    @Transactional
+    @Transactional(readOnly = true)
     public List<Item> searchItems(String text) {
         log.info("Searching items containing text: {}", text);
 
@@ -93,19 +92,29 @@ public class ItemServiceImpl implements ItemService {
             return Collections.emptyList();
         }
 
-        Sort sort = Sort.by(Sort.Direction.DESC, "end");
-        for (Item item : availableItems) {
-            List<Booking> bookingsList = bookingRepository.findByItemIdAndStatus(item.getId(), BookingStatus.APPROVED, sort);
-            Set<Booking> bookings = new HashSet<>(bookingsList);
-            item.setBookings(bookings);
-        }
+        List<Long> itemIds = availableItems.stream()
+                .map(Item::getId)
+                .collect(Collectors.toList());
+
+        List<Booking> allBookings = bookingRepository.findBookingsForItemsInList(itemIds, BookingStatus.APPROVED);
+
+        List<Comment> allComments = commentRepository.findCommentsForItemsInList(itemIds);
+
+        Map<Long, List<Booking>> bookingsMap = allBookings.stream()
+                .collect(Collectors.groupingBy(booking -> booking.getItem().getId()));
+
+        Map<Long, List<Comment>> commentsMap = allComments.stream()
+                .collect(Collectors.groupingBy(comment -> comment.getItem().getId()));
 
         for (Item item : availableItems) {
-            List<Comment> commentsList = commentRepository.findByItem_Id(item.getId());
-            Set<Comment> comments = new HashSet<>(commentsList);
-            item.setComments(comments);
+            List<Booking> bookingsForThisItem = bookingsMap.getOrDefault(item.getId(), Collections.emptyList());
+            List<Comment> commentsForThisItem = commentsMap.getOrDefault(item.getId(), Collections.emptyList());
+            if (item.getComments() == null) {
+                item.setComments(new HashSet<>(commentsForThisItem));
+            } else {
+                item.getComments().addAll(commentsForThisItem);
+            }
         }
-
         return availableItems;
     }
 
