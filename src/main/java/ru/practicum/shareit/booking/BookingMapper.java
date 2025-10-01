@@ -5,7 +5,6 @@ import ru.practicum.shareit.item.Item;
 import ru.practicum.shareit.item.ItemDto;
 import ru.practicum.shareit.user.User;
 import ru.practicum.shareit.user.UserDto;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class BookingMapper {
