@@ -1,6 +1,7 @@
-package ru.practicum.shareit;
+package ru.practicum.shareit.request;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -8,7 +9,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import ru.practicum.shareit.item.dto.ItemDtoToRequest;
-import ru.practicum.shareit.item.dto.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.request.model.ItemRequest;
 import ru.practicum.shareit.request.dto.ItemRequestDto;
@@ -21,9 +21,8 @@ import ru.practicum.shareit.user.repository.UserRepository;
 import java.time.*;
 import java.util.*;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class ItemRequestServiceTests {
@@ -38,98 +37,74 @@ public class ItemRequestServiceTests {
     ItemRequestMapper itemRequestMapper;
 
     @Mock
-    ItemMapper itemMapper;
-
-    @Mock
     UserRepository userRepository;
 
-    @Test
-    void testCreateItemRequestWhenUserExists() throws Exception {
-        User user = new User(3L, "John Watson", "JohnWatson@gmail.com");
-        List<Item> items = new ArrayList<>();
-        List<ItemDtoToRequest> emptyDtoList = Collections.emptyList();
-        ItemRequestDto itemRequestDto = new ItemRequestDto(3L, "Нужна дрель",
-                LocalDateTime.of(2025, Month.AUGUST, 15, 12, 5), null);
-        ItemRequest itemRequest = new ItemRequest(3L, "Нужна дрель",
-                user,
-                itemRequestDto.getDateTime().atZone(ZoneId.systemDefault()).toInstant(),
-                items);
-        ItemRequestDto expectedDto = new ItemRequestDto(3L, "Нужна дрель",
-                LocalDateTime.of(2025, Month.AUGUST, 15, 12, 5), Collections.emptyList());
+    private User user;
+    private User user2;
+    private Item item1, item2, item3;
+    private ItemRequest itemRequest1, itemRequest2;
+    private ItemRequestDto itemRequestDto1, itemRequestDto2;
+    private ItemDtoToRequest itemDtoToRequest1, itemDtoToRequest2, itemDtoToRequest3;
 
+    @BeforeEach
+    void setUp() {
+        user = new User(3L, "John Watson", "JohnWatson@gmail.com");
+        user2 = new User(4L, "Pete Watson", "PeteWatson@gmail.com");
 
-        Mockito.when(userRepository.findById(3L)).thenReturn(Optional.of(user));
-        Mockito.when(itemRequestMapper.toItemRequest(itemRequestDto, user)).thenReturn(itemRequest);
-        Mockito.when(itemRequestRepository.save(itemRequest)).thenReturn(itemRequest);
-        Mockito.when(itemRequestMapper.toItemRequestDto(itemRequest, emptyDtoList)).thenReturn(expectedDto);
+        item1 = new Item(1L, "Дрель", "набор бит", true, user, null);
+        item2 = new Item(2L, "Шуруповерт", "Мощный", true, user, null);
+        item3 = new Item(3L, "Перфоратор", "Перфоратор", true, user, null);
 
-        ItemRequestDto result = itemRequestService.createItemRequest(user.getId(), itemRequestDto);
+        itemDtoToRequest1 = new ItemDtoToRequest(1L, "Дрель", 3L);
+        itemDtoToRequest2 = new ItemDtoToRequest(2L, "Шуруповерт", 3L);
+        itemDtoToRequest3 = new ItemDtoToRequest(3L, "Перфоратор", 3L);
 
-        Assertions.assertEquals(result, expectedDto);
+        List<ItemDtoToRequest> itemDtoToRequests1 = List.of(itemDtoToRequest1);
+        List<ItemDtoToRequest> itemDtoToRequests2 = List.of(itemDtoToRequest2, itemDtoToRequest3);
 
-        Mockito.verify(userRepository, times(1)).findById(3L);
-        Mockito.verify(itemRequestMapper, times(1)).toItemRequest(itemRequestDto, user);
-        Mockito.verify(itemRequestRepository, times(1)).save(itemRequest);
-        Mockito.verify(itemRequestMapper, times(1)).toItemRequestDto(itemRequest, emptyDtoList);
-    }
-
-    @Test
-    void testGetAllItemRequestsOfUser() throws Exception {
-        User user1 = new User(3L, "John Watson", "JohnWatson@gmail.com");
-        Item item1 = new Item(1L, "Дрель", "набор бит",
-                true, user1, null);
-        Item item2 = new Item(2L, "Шуруповерт", "Мощный",
-                true, user1, null);
-        Item item3 = new Item(3L, "Перфоратор", "Перфоратор",
-                true, user1, null);
-        List<Item> items1 = new ArrayList<>();
-        List<Item> items2 = new ArrayList<>();
-
-        ItemDtoToRequest itemDtoToRequest1 = new ItemDtoToRequest(1L, "Дрель", 3L);
-        ItemDtoToRequest itemDtoToRequest2 = new ItemDtoToRequest(2L, "Шуруповерт", 3L);
-        ItemDtoToRequest itemDtoToRequest3 = new ItemDtoToRequest(3L, "Перфоратор", 3L);
-        List<ItemDtoToRequest> itemDtoToRequests1 = new ArrayList<>();
-        List<ItemDtoToRequest> itemDtoToRequests2 = new ArrayList<>();
-        itemDtoToRequests1.add(itemDtoToRequest1);
-        itemDtoToRequests2.add(itemDtoToRequest2);
-        itemDtoToRequests2.add(itemDtoToRequest3);
-
-        ItemRequestDto itemRequestDto1 = new ItemRequestDto(3L, "Нужна дрель",
+        itemRequestDto1 = new ItemRequestDto(3L, "Нужна дрель",
                 LocalDateTime.of(2025, Month.AUGUST, 15, 12, 5), itemDtoToRequests1);
-        ItemRequestDto itemRequestDto2 = new ItemRequestDto(4L, "Нужен скотч",
+        itemRequestDto2 = new ItemRequestDto(4L, "Нужен скотч",
                 LocalDateTime.of(2025, Month.AUGUST, 12, 17, 40), itemDtoToRequests2);
-        ItemRequest itemRequest1 = new ItemRequest(3L, "Нужна дрель",
-                user1,
-                itemRequestDto1.getDateTime().atZone(ZoneId.systemDefault()).toInstant(),
-                items1);
-        ItemRequest itemRequest2 = new ItemRequest(4L, "Нужен скотч",
-                user1,
-                itemRequestDto2.getDateTime().atZone(ZoneId.systemDefault()).toInstant(),
-                items2);
 
-        Collection<ItemRequest> itemRequestsOfUser1 = new ArrayList<>();
-        itemRequestsOfUser1.add(itemRequest1);
-        itemRequestsOfUser1.add(itemRequest2);
+        itemRequest1 = new ItemRequest(3L, "Нужна дрель", user,
+                itemRequestDto1.getDateTime().atZone(ZoneId.systemDefault()).toInstant(), Collections.emptyList());
+        itemRequest2 = new ItemRequest(4L, "Нужен скотч", user2,
+                itemRequestDto2.getDateTime().atZone(ZoneId.systemDefault()).toInstant(), List.of(item3));
 
         item1.setRequest(itemRequest1);
         item2.setRequest(itemRequest1);
         item3.setRequest(itemRequest2);
-        items1.add(item1);
-        items1.add(item2);
-        items2.add(item3);
+    }
 
+    @Test
+    void testCreateItemRequestWhenUserExists() {
+        Mockito.when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        Mockito.when(itemRequestMapper.toItemRequest(any(ItemRequestDto.class), eq(user))).thenReturn(itemRequest1);
+        Mockito.when(itemRequestRepository.save(itemRequest1)).thenReturn(itemRequest1);
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest1), eq(Collections.emptyList()))).thenReturn(itemRequestDto1);
 
-        Mockito.when(userRepository.findById(3L)).thenReturn(Optional.of(user1));
-        Mockito.when(itemRequestRepository.findAllRequestsByUserId(3L)).thenReturn(itemRequestsOfUser1);
-        Mockito.when(itemMapper.toItemDtoToRequest(item1)).thenReturn(itemDtoToRequest1);
-        Mockito.when(itemMapper.toItemDtoToRequest(item2)).thenReturn(itemDtoToRequest2);
-        Mockito.when(itemMapper.toItemDtoToRequest(item3)).thenReturn(itemDtoToRequest3);
-        Mockito.when(itemRequestMapper.toItemRequestDto(Mockito.eq(itemRequest1), Mockito.anyList()))
-                .thenReturn(itemRequestDto1);
-        Mockito.when(itemRequestMapper.toItemRequestDto(Mockito.eq(itemRequest2), Mockito.anyList()))
-                .thenReturn(itemRequestDto2);
+        ItemRequestDto result = itemRequestService.createItemRequest(user.getId(), itemRequestDto1);
 
-        Collection<ItemRequestDto> result = itemRequestService.getAllItemRequestsOfUser(user1.getId());
+        Assertions.assertEquals(itemRequestDto1, result);
+
+        Mockito.verify(userRepository, times(1)).findById(user.getId());
+        Mockito.verify(itemRequestMapper, times(1)).toItemRequest(any(ItemRequestDto.class), eq(user));
+        Mockito.verify(itemRequestRepository, times(1)).save(itemRequest1);
+        Mockito.verify(itemRequestMapper, times(1)).toItemRequestDto(eq(itemRequest1), eq(Collections.emptyList()));
+    }
+
+    @Test
+    void testGetAllItemRequestsOfUser() {
+        Collection<ItemRequest> itemRequestsOfUser = List.of(itemRequest1, itemRequest2);
+
+        Mockito.when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        Mockito.when(itemRequestRepository.findAllRequestsByUserId(user.getId())).thenReturn(itemRequestsOfUser);
+
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest1), anyList())).thenReturn(itemRequestDto1);
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest2), anyList())).thenReturn(itemRequestDto2);
+
+        Collection<ItemRequestDto> result = itemRequestService.getAllItemRequestsOfUser(user.getId());
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(2, result.size());
@@ -137,97 +112,44 @@ public class ItemRequestServiceTests {
         Assertions.assertTrue(resultList.contains(itemRequestDto1));
         Assertions.assertTrue(resultList.contains(itemRequestDto2));
 
-        Mockito.verify(itemRequestRepository, times(1)).findAllRequestsByUserId(3L);
+        Mockito.verify(itemRequestRepository, times(1)).findAllRequestsByUserId(user.getId());
+        Mockito.verify(itemRequestMapper, times(2)).toItemRequestDto(any(ItemRequest.class), anyList());
     }
 
     @Test
     void testGetAllItemRequests() {
-        User user1 = new User(3L, "John Watson", "JohnWatson@gmail.com");
-        User user2 = new User(4L, "Pete Watson", "PeteWatson@gmail.com");
+        List<ItemRequest> allItemRequests = List.of(itemRequest1, itemRequest2);
 
-        Item item1 = new Item(1L, "Дрель", "набор бит", true, user1, null);
-        Item item2 = new Item(2L, "Шуруповерт", "Мощный", true, user1, null);
-        Item item3 = new Item(3L, "Перфоратор", "Перфоратор", true, user1, null);
+        Mockito.when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        Mockito.when(itemRequestRepository.findAll(anyLong())).thenReturn(allItemRequests);
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest1), anyList())).thenReturn(itemRequestDto1);
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest2), anyList())).thenReturn(itemRequestDto2);
 
-        List<Item> items1 = new ArrayList<>();
-        List<Item> items2 = new ArrayList<>();
-
-        ItemDtoToRequest itemDtoToRequest1 = new ItemDtoToRequest(1L, "Дрель", 3L);
-        ItemDtoToRequest itemDtoToRequest2 = new ItemDtoToRequest(2L, "Шуруповерт", 3L);
-        ItemDtoToRequest itemDtoToRequest3 = new ItemDtoToRequest(3L, "Перфоратор", 3L);
-
-        List<ItemDtoToRequest> itemDtoToRequests1 = new ArrayList<>();
-        List<ItemDtoToRequest> itemDtoToRequests2 = new ArrayList<>();
-        itemDtoToRequests1.add(itemDtoToRequest1);
-        itemDtoToRequests2.add(itemDtoToRequest2);
-        itemDtoToRequests2.add(itemDtoToRequest3);
-
-        ItemRequestDto itemRequestDto1 = new ItemRequestDto(3L, "Нужна дрель",
-                LocalDateTime.of(2025, Month.AUGUST, 15, 12, 5), itemDtoToRequests1);
-        ItemRequestDto itemRequestDto2 = new ItemRequestDto(4L, "Нужен скотч",
-                LocalDateTime.of(2025, Month.AUGUST, 12, 17, 40), itemDtoToRequests2);
-
-        ItemRequest itemRequest1 = new ItemRequest(3L, "Нужна дрель", user1,
-                itemRequestDto1.getDateTime().atZone(ZoneId.systemDefault()).toInstant(), items1);
-        ItemRequest itemRequest2 = new ItemRequest(4L, "Нужен скотч", user2,
-                itemRequestDto2.getDateTime().atZone(ZoneId.systemDefault()).toInstant(), items2);
-
-        item1.setRequest(itemRequest1);
-        item2.setRequest(itemRequest1);
-        item3.setRequest(itemRequest2);
-        items1.add(item1);
-        items1.add(item2);
-        items2.add(item3);
-
-        List<ItemRequest> allItemRequest = List.of(itemRequest2);
-
-        Mockito.when(itemRequestRepository.findAll(anyLong())).thenReturn(allItemRequest);
-        Mockito.when(itemMapper.toItemDtoToRequest(any(Item.class)))
-                .thenReturn(itemDtoToRequest1)
-                .thenReturn(itemDtoToRequest2)
-                .thenReturn(itemDtoToRequest3);
-        Mockito.when(itemMapper.toItemDtoToRequest(item3)).thenReturn(itemDtoToRequest3);
-        Mockito.when(itemRequestMapper.toItemRequestDto(Mockito.eq(itemRequest2), Mockito.anyList()))
-                .thenReturn(itemRequestDto2);
-
-        Collection<ItemRequestDto> result = itemRequestService.getAllItemRequests(user1.getId());
+        Collection<ItemRequestDto> result = itemRequestService.getAllItemRequests(user.getId());
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(1, result.size());
-
+        Assertions.assertEquals(2, result.size());
         List<ItemRequestDto> resultList = new ArrayList<>(result);
-        Assertions.assertFalse(resultList.contains(itemRequestDto1));
+        Assertions.assertTrue(resultList.contains(itemRequestDto1));
         Assertions.assertTrue(resultList.contains(itemRequestDto2));
 
         Mockito.verify(itemRequestRepository, times(1)).findAll(anyLong());
-        Mockito.verify(itemMapper, times(1)).toItemDtoToRequest(any(Item.class));
-        Mockito.verify(itemRequestMapper, times(0)).toItemRequestDto(Mockito.eq(itemRequest1), Mockito.anyList());
-        Mockito.verify(itemRequestMapper, times(1)).toItemRequestDto(Mockito.eq(itemRequest2), Mockito.anyList());
+        Mockito.verify(itemRequestMapper, times(2)).toItemRequestDto(any(ItemRequest.class), anyList());
     }
 
     @Test
     void getItemRequestById_whenRequestExists_shouldReturnRequestDto() {
         Long requestId = 1L;
-        LocalDateTime created = LocalDateTime.now();
+        LocalDateTime created = LocalDateTime.of(2025, Month.AUGUST, 15, 12, 5);
 
         ItemRequest itemRequest = new ItemRequest();
         itemRequest.setId(requestId);
         itemRequest.setDescription("Нужна дрель");
         itemRequest.setCreated(created.atZone(ZoneId.systemDefault()).toInstant());
-
-        Item item1 = new Item();
-        item1.setId(1L);
-        item1.setName("Дрель");
-        item1.setRequest(itemRequest);
-
-        Item item2 = new Item();
-        item2.setId(2L);
-        item2.setName("Молоток");
-        item1.setRequest(itemRequest);
-
         itemRequest.setItemsList(List.of(item1, item2));
-        ItemDtoToRequest itemDto1 = new ItemDtoToRequest(1L, "Дрель", 1L);
-        ItemDtoToRequest itemDto2 = new ItemDtoToRequest(2L, "Молоток", 2L);
+
+        ItemDtoToRequest itemDto1 = new ItemDtoToRequest(1L, "Дрель", 3L);
+        ItemDtoToRequest itemDto2 = new ItemDtoToRequest(2L, "Шуруповерт", 3L);
         List<ItemDtoToRequest> itemDtos = List.of(itemDto1, itemDto2);
 
         ItemRequestDto expectedDto = new ItemRequestDto();
@@ -238,11 +160,8 @@ public class ItemRequestServiceTests {
 
         Mockito.when(itemRequestRepository.findById(requestId))
                 .thenReturn(Optional.of(itemRequest));
-        Mockito.when(itemMapper.toItemDtoToRequest(item1))
-                .thenReturn(itemDto1);
-        Mockito.when(itemMapper.toItemDtoToRequest(item2))
-                .thenReturn(itemDto2);
-        Mockito.when(itemRequestMapper.toItemRequestDto(itemRequest, itemDtos))
+
+        Mockito.when(itemRequestMapper.toItemRequestDto(eq(itemRequest), anyList()))
                 .thenReturn(expectedDto);
 
         ItemRequestDto result = itemRequestService.getItemRequestById(requestId);
@@ -251,15 +170,9 @@ public class ItemRequestServiceTests {
         Assertions.assertEquals(requestId, result.getId());
         Assertions.assertEquals("Нужна дрель", result.getDescription());
         Assertions.assertEquals(created, result.getDateTime());
-        Assertions.assertNotNull(result.getItemsList());
         Assertions.assertEquals(2, result.getItemsList().size());
-        Assertions.assertEquals("Дрель", result.getItemsList().get(0).getName());
 
         Mockito.verify(itemRequestRepository, times(1)).findById(requestId);
+        Mockito.verify(itemRequestMapper, times(1)).toItemRequestDto(eq(itemRequest), anyList());
     }
-
-
-
-
-
 }

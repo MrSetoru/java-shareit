@@ -17,8 +17,6 @@ import ru.practicum.shareit.request.repository.ItemRequestRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
-
-
 import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,12 +27,12 @@ public class ItemServiceImpl implements ItemService {
 
     private final ItemRepository itemRepository;
     private final UserRepository userRepository;
-    private final ItemMapper itemMapper;
     private final BookingRepository bookingRepository;
     private final CommentRepository commentRepository;
     private final CommentMapper commentMapper;
     private final ItemRequestRepository itemRequestRepository;
 
+    @Override
     public Collection<ItemDtoAll> getAllItems(Long userId) {
         getUserIfExists(userId);
 
@@ -48,7 +46,6 @@ public class ItemServiceImpl implements ItemService {
                 .map(commentMapper::toCommentDto)
                 .collect(Collectors.toList());
 
-
         Map<Long, Booking> lastBookings = bookingRepository.findLastBookings(itemIds).stream()
                 .collect(Collectors.toMap(b -> b.getItem().getId(), b -> b));
 
@@ -56,7 +53,7 @@ public class ItemServiceImpl implements ItemService {
                 .collect(Collectors.toMap(b -> b.getItem().getId(), b -> b));
 
         return items.stream()
-                .map(item -> itemMapper.toItemDtoAll(
+                .map(item -> ItemMapper.toItemDtoAll(
                         item,
                         comments,
                         lastBookings.get(item.getId()),
@@ -75,12 +72,10 @@ public class ItemServiceImpl implements ItemService {
 
         List<Booking> bookings = bookingRepository.findAllByItemId(item.getId()).stream().toList();
 
-        Long itemOwnerId = bookings.isEmpty() ? null : bookings.getFirst().getItem().getOwner().getId();
-
         Booking lastBooking = null;
         Booking nearestBooking = null;
 
-        if (userId.equals(itemOwnerId)) {
+        if (item.getOwner() != null && userId.equals(item.getOwner().getId())) {
             lastBooking = bookings.stream()
                     .filter(b -> b.getStart().isBefore(Instant.now()))
                     .max(Comparator.comparing(Booking::getEnd))
@@ -92,14 +87,13 @@ public class ItemServiceImpl implements ItemService {
                     .orElse(null);
         }
 
-        return itemMapper.toItemDtoAll(item, comments, lastBooking, nearestBooking);
+        return ItemMapper.toItemDtoAll(item, comments, lastBooking, nearestBooking);
     }
 
     @Override
     public ItemDto createItem(ItemDto itemDto, Long userId) {
         User owner = getUserIfExists(userId);
-
-        Item item = itemMapper.toItem(itemDto, owner);
+        Item item = ItemMapper.toItem(itemDto, owner);
 
         if (itemDto.getRequestId() != null) {
             ItemRequest request = itemRequestRepository.findById(itemDto.getRequestId())
@@ -107,27 +101,28 @@ public class ItemServiceImpl implements ItemService {
             item.setRequest(request);
         }
         Item createdItem = itemRepository.save(item);
-        return itemMapper.toItemDto(createdItem);
+        return ItemMapper.toItemDto(createdItem);
     }
 
+    @Override
     public ItemDto editItem(Long itemId, ItemDto itemDto, Long userId) {
         getUserIfExists(userId);
         Item oldItem = getItemIfExists(itemId);
 
         if (!oldItem.getOwner().getId().equals(userId)) {
-            throw new NotFoundException("Вещь с id = " + itemDto.getId() + " не найдена или не принадлежит пользователю");
+            throw new NotFoundException("Вещь с id = " + itemId + " не найдена или не принадлежит пользователю");
         }
 
-        itemMapper.updateItemFromDto(itemDto, oldItem);
+        ItemMapper.updateItemFromDto(itemDto, oldItem);
         Item updatedItem = itemRepository.save(oldItem);
 
-        return itemMapper.toItemDto(updatedItem);
+        return ItemMapper.toItemDto(updatedItem);
     }
 
     public Collection<ItemDto> searchItems(String query, Long userId) {
         getUserIfExists(userId);
         return itemRepository.searchItem(query).stream()
-                .map(itemMapper::toItemDto)
+                .map(ItemMapper::toItemDto)
                 .collect(Collectors.toList());
     }
 
@@ -164,5 +159,4 @@ public class ItemServiceImpl implements ItemService {
         return itemRepository.findById(itemId)
                 .orElseThrow(() -> new NotFoundException("Вещь с id = " + itemId + " не найдена"));
     }
-
 }

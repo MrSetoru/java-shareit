@@ -27,7 +27,6 @@ public class ItemRequestServiceImpl implements ItemRequestService {
     private final ItemRepository itemRepository;
     private final ItemRequestMapper itemRequestMapper;
     private final ItemRequestRepository itemRequestRepository;
-    private final ItemMapper itemMapper;
 
     @Override
     public ItemRequestDto createItemRequest(Long userId, ItemRequestDto itemRequestDto) {
@@ -37,7 +36,7 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         List<ItemDtoToRequest> listOfItemDtoToRequest = Optional.ofNullable(createdItemRequest.getItemsList())
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(itemMapper::toItemDtoToRequest)
+                .map(ItemMapper::toItemDtoToRequest)
                 .toList();
         return itemRequestMapper.toItemRequestDto(createdItemRequest, listOfItemDtoToRequest);
     }
@@ -51,19 +50,19 @@ public class ItemRequestServiceImpl implements ItemRequestService {
 
     @Override
     public Collection<ItemRequestDto> getAllItemRequests(Long userId) {
+        getUserIfExists(userId);
         Collection<ItemRequest> allItemRequests = itemRequestRepository.findAll(userId);
         return convertRequestListToDto(allItemRequests);
     }
 
     @Override
     public ItemRequestDto getItemRequestById(Long requestId) {
-
         ItemRequest itemRequest = itemRequestRepository.findById(requestId)
                 .orElseThrow(() -> new NotFoundException("Запрос с id = " + requestId + " не найден"));
         List<ItemDtoToRequest> itemDtoToRequests = Optional.ofNullable(itemRequest.getItemsList())
                 .orElse(Collections.emptyList())
                 .stream()
-                .map(itemMapper::toItemDtoToRequest)
+                .map(ItemMapper::toItemDtoToRequest)
                 .toList();
         return itemRequestMapper.toItemRequestDto(itemRequest, itemDtoToRequests);
     }
@@ -82,9 +81,10 @@ public class ItemRequestServiceImpl implements ItemRequestService {
         return itemRequests.stream()
                 .map(itemRequest -> itemRequestMapper.toItemRequestDto(
                         itemRequest,
-                        itemRequest.getItemsList()
+                        Optional.ofNullable(itemRequest.getItemsList())
+                                .orElse(Collections.emptyList())
                                 .stream()
-                                .map(item -> itemMapper.toItemDtoToRequest(item))
+                                .map(ItemMapper::toItemDtoToRequest)
                                 .toList()
                 )).toList();
     }

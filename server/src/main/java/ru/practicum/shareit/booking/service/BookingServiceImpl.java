@@ -33,7 +33,6 @@ public class BookingServiceImpl implements BookingService {
     private final ItemRepository itemRepository;
     private final BookingMapper bookingMapper;
     private final BookingRepository bookingRepository;
-    private final ItemMapper itemMapper;
 
     @Override
     public BookingDto createBooking(BookingRequestDto bookingRequestDto, Long userId) {
@@ -51,7 +50,7 @@ public class BookingServiceImpl implements BookingService {
         Booking booking = bookingMapper.toBooking(bookingRequestDto, item, booker, Status.WAITING);
 
         ItemDto itemDto = booking.getItem() != null ?
-                itemMapper.toItemDto(booking.getItem()) : null;
+                ItemMapper.toItemDto(booking.getItem()) : null;
 
         return bookingMapper.toBookingDto(bookingRepository.save(booking), itemDto);
     }
@@ -70,8 +69,10 @@ public class BookingServiceImpl implements BookingService {
         }
 
         booking.setStatus(approved ? Status.APPROVED : Status.REJECTED);
+
         ItemDto itemDto = booking.getItem() != null ?
-                itemMapper.toItemDto(booking.getItem()) : null;
+                ItemMapper.toItemDto(booking.getItem()) : null;
+
         return bookingMapper.toBookingDto(bookingRepository.save(booking), itemDto);
     }
 
@@ -86,7 +87,8 @@ public class BookingServiceImpl implements BookingService {
                     "либо владелец вещи либо автор бронирования");
         }
         ItemDto itemDto = booking.getItem() != null ?
-                itemMapper.toItemDto(booking.getItem()) : null;
+                ItemMapper.toItemDto(booking.getItem()) : null;
+
         return bookingMapper.toBookingDto(booking, itemDto);
     }
 
@@ -105,7 +107,7 @@ public class BookingServiceImpl implements BookingService {
 
         return  bookings.getContent()
                 .stream()
-                .map(booking -> bookingMapper.toBookingDto(booking, itemMapper.toItemDto(booking.getItem())))
+                .map(booking -> bookingMapper.toBookingDto(booking, ItemMapper.toItemDto(booking.getItem())))
                 .collect(Collectors.toList());
     }
 
@@ -120,7 +122,7 @@ public class BookingServiceImpl implements BookingService {
 
         return bookingRepository.getBookingsForOwnerItems(bookingState, userId)
                 .stream()
-                .map(booking -> bookingMapper.toBookingDto(booking, itemMapper.toItemDto(booking.getItem())))
+                .map(booking -> bookingMapper.toBookingDto(booking, ItemMapper.toItemDto(booking.getItem())))
                 .collect(Collectors.toList());
     }
 
