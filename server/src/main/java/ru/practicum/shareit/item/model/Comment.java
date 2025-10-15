@@ -8,8 +8,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "comments")
-@Getter
-@Setter
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comment {

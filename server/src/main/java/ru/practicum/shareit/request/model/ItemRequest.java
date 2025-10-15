@@ -9,10 +9,9 @@ import ru.practicum.shareit.user.model.User;
 import java.time.Instant;
 import java.util.List;
 
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
-@Getter
-@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "requests")
 public class ItemRequest {

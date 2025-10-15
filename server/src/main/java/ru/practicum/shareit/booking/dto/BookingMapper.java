@@ -1,7 +1,6 @@
 package ru.practicum.shareit.booking.dto;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import lombok.experimental.UtilityClass;
 import ru.practicum.shareit.booking.model.Status;
 import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.item.dto.ItemDto;
@@ -14,11 +13,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 
-@Component
-@RequiredArgsConstructor
+@UtilityClass
 public class BookingMapper {
 
-    public BookingDto toBookingDto(Booking booking, ItemDto itemDto) {
+    public static BookingDto toBookingDto(Booking booking, ItemDto itemDto) {
 
         UserDto userDto = booking.getBooker() != null ?
                 UserMapper.toUserDto(booking.getBooker()) : null;
@@ -33,7 +31,7 @@ public class BookingMapper {
         );
     }
 
-    public Booking toBooking(BookingRequestDto bookingDto, Item item, User booker, Status status) {
+    public static Booking toBooking(BookingRequestDto bookingDto, Item item, User booker, Status status) {
         Booking booking = new Booking();
         booking.setStart(toInstant(bookingDto.getStart()));
         booking.setEnd(toInstant(bookingDto.getEnd()));
@@ -43,13 +41,13 @@ public class BookingMapper {
         return booking;
     }
 
-    private LocalDateTime toLocalDateTime(Instant instant) {
+    private static LocalDateTime toLocalDateTime(Instant instant) {
         return instant != null
                 ? LocalDateTime.ofInstant(instant, ZoneId.systemDefault())
                 : null;
     }
 
-    private Instant toInstant(LocalDateTime localDateTime) {
+    private static Instant toInstant(LocalDateTime localDateTime) {
         return localDateTime != null
                 ? localDateTime.atZone(ZoneId.systemDefault()).toInstant()
                 : null;

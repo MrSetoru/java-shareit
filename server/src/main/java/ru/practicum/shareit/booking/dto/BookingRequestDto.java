@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 
 @Data
 public class BookingRequestDto {
-    private Long itemId;  // Поле для ID вещи
+    private Long itemId;
     private LocalDateTime start;
     private LocalDateTime end;
 }
